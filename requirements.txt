@@ -1,0 +1,14 @@
+fastapi>=0.111.0
+uvicorn>=0.30.0
+pydantic>=2.7.0
+pydantic-settings>=2.3.0
+langchain>=0.2.0
+langchain-core>=0.2.0
+langchain-community>=0.2.0
+langgraph>=0.1.0
+langchain-groq>=0.1.0
+qdrant-client>=1.9.0
+neo4j>=5.20.0
+loguru>=0.7.2
+fastembed>=0.3.0
+

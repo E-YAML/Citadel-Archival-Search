@@ -1,0 +1,20 @@
+# Secrets
+.env
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.venv/
+
+# Database local storage
+qdrant_storage/
+neo4j_storage/
+
+# IDE / OS configs
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
