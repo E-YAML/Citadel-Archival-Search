@@ -3,7 +3,7 @@ from langchain_core.documents import Document
 from loguru import logger
 
 from app.graph.state import AgentState
-from app.services.retrieval import retrieve_vector_context
+from app.services.retrieval import retrieve_vector_context, retrieve_graph_context
 from app.graph.chains import (
     retrieval_grader_chain,
     generator_chain,
@@ -31,7 +31,19 @@ async def retrieve_node(state: AgentState) -> Dict[str, Any]:
             Document(page_content=res["text"], metadata=res["metadata"])
             for res in search_results
         ]
-        logger.info(f"LangGraph Node: [retrieve_node] - Retrieved {len(documents)} context documents.")
+        
+        # Fetch knowledge graph context from Neo4j
+        graph_context = await retrieve_graph_context(query=question)
+        if graph_context:
+            logger.info("Injecting Neo4j graph context into retrieved documents.")
+            documents.append(
+                Document(
+                    page_content=graph_context,
+                    metadata={"book_title": "Citadel Knowledge Graph", "chapter_title": "Lineage Records"}
+                )
+            )
+
+        logger.info(f"LangGraph Node: [retrieve_node] - Retrieved {len(documents)} context documents (including graph context).")
         return {"documents": documents}
     except Exception as e:
         logger.error(f"LangGraph Node: [retrieve_node] - Execution failed: {str(e)}")

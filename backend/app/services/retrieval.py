@@ -111,3 +111,77 @@ async def query_knowledge_graph(cypher_query: str) -> List[Dict[str, Any]]:
     except Exception as e:
         logger.error(f"Error executing Cypher query: {str(e)}")
         raise Neo4jConnectionError(f"Knowledge graph query failed: {str(e)}") from e
+
+
+async def retrieve_graph_context(query: str) -> str:
+    """
+    Scans the query for known character names, queries Neo4j for their properties
+    and immediate relations, and returns a formatted context string.
+    """
+    logger.info(f"Checking graph database for entities in query: '{query}'")
+    try:
+        driver = neo4j_service.get_driver()
+        async with driver.session() as session:
+            # Find characters mentioned in the query
+            find_query = """
+            MATCH (c:Character)
+            WHERE toLower($query) CONTAINS toLower(c.name)
+            RETURN c.name AS name
+            """
+            result = await session.run(find_query, query=query)
+            records = await result.data()
+            names = [r["name"] for r in records]
+            
+            if not names:
+                logger.info("No matching graph entities found in query.")
+                return ""
+            
+            logger.info(f"Graph entities found in query: {names}")
+            
+            graph_context_parts = []
+            for name in names:
+                # Fetch properties of the character
+                prop_query = """
+                MATCH (c:Character {name: $name})
+                RETURN c.name AS name, c.house AS house, c.status AS status
+                """
+                prop_result = await session.run(prop_query, name=name)
+                prop_record = await prop_result.single()
+                
+                props_str = f"Character {name}"
+                if prop_record:
+                    house = prop_record.get("house")
+                    status = prop_record.get("status")
+                    details = []
+                    if house:
+                        details.append(f"House: {house}")
+                    if status:
+                        details.append(f"Status: {status}")
+                    if details:
+                        props_str += f" ({', '.join(details)})"
+                
+                # Fetch relationships starting/ending with this character
+                rel_query = """
+                MATCH (c:Character {name: $name})-[r]-(o:Character)
+                RETURN c.name AS c_name, type(r) AS rel_type, o.name AS o_name, startNode(r) = c AS is_outbound
+                """
+                rel_result = await session.run(rel_query, name=name)
+                rel_records = await rel_result.data()
+                
+                relationships_str = ""
+                if rel_records:
+                    rels = []
+                    for r in rel_records:
+                        if r["is_outbound"]:
+                            rels.append(f"{r['c_name']} is {r['rel_type']} of {r['o_name']}")
+                        else:
+                            rels.append(f"{r['o_name']} is {r['rel_type']} of {r['c_name']}")
+                    relationships_str = f" Relationships: {', '.join(rels)}."
+                
+                graph_context_parts.append(f"{props_str}.{relationships_str}")
+                
+            return "\n".join(graph_context_parts)
+            
+    except Exception as e:
+        logger.error(f"Failed to query Neo4j graph context: {str(e)}")
+        return ""

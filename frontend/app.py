@@ -112,7 +112,9 @@ if user_prompt := st.chat_input("Ask a question about Westeros lore..."):
         response_placeholder = st.empty()
         
         full_response = ""
-        api_url = "http://localhost:8000/api/chat/stream"
+        import os
+        backend_url = os.environ.get("BACKEND_API_URL", "http://localhost:8000")
+        api_url = f"{backend_url.rstrip('/')}/api/chat/stream"
         payload = {
             "message": user_prompt,
             "thread_id": st.session_state.thread_id

@@ -1,9 +1,11 @@
 import json
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from loguru import logger
 
+from app.core.config import settings
+from app.core.limiter import limiter
 from app.graph.workflow import app as graph_app
 
 router = APIRouter()
@@ -19,7 +21,8 @@ class ChatRequest(BaseModel):
 
 
 @router.post("/stream")
-async def stream_chat(payload: ChatRequest) -> StreamingResponse:
+@limiter.limit(f"{settings.RATE_LIMIT_LIMIT}/minute")
+async def stream_chat(payload: ChatRequest, request: Request) -> StreamingResponse:
     """
     Exposes a streaming Server-Sent Events (SSE) connection that executes
     the LangGraph state machine, yielding active node logs and model tokens.

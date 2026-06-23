@@ -1,6 +1,9 @@
 from langgraph.graph import StateGraph, START, END
-from langgraph.checkpoint.memory import MemorySaver
+import sqlite3
+from langgraph.checkpoint.sqlite import SqliteSaver
 from loguru import logger
+
+from app.core.config import settings
 
 from app.graph.state import AgentState
 from app.graph.nodes import (
@@ -128,8 +131,9 @@ workflow.add_conditional_edges(
 # Set up Transition back to Retrieval from Query Rewrite Node
 workflow.add_edge("rewrite", "retrieve")
 
-# Enable checkpoint memory for thread tracking in local testing
-memory = MemorySaver()
+# Enable persistent sqlite checkpoint database for thread tracking
+conn = sqlite3.connect(settings.CHECKPOINT_DB_PATH, check_same_thread=False)
+memory = SqliteSaver(conn)
 
 # Compile the runnable graph app
 app = workflow.compile(checkpointer=memory)

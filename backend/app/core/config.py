@@ -32,6 +32,13 @@ class Settings(BaseSettings):
     LANGCHAIN_TRACING_V2: bool = False
     LANGCHAIN_API_KEY: Optional[str] = None
 
+    # Production Architecture Configuration
+    CHECKPOINT_DB_PATH: str = "citadel_checkpoints.db"
+    ALLOWED_ORIGINS: list[str] = ["http://localhost:8501"]
+    RATE_LIMIT_LIMIT: int = 10
+    RATE_LIMIT_PERIOD: int = 60
+    LLM_TIMEOUT: float = 30.0
+
 
 # Instantiate single global settings object
 settings = Settings()
