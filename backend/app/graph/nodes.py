@@ -74,11 +74,12 @@ async def grade_documents_node(state: AgentState) -> Dict[str, Any]:
                 "question": question,
                 "document": doc.page_content
             })
-            if res.is_relevant:
+            grade = res.strip().lower()
+            if "yes" in grade:
                 logger.info(f"Document {idx + 1}: Relevance check - RELEVANT.")
                 filtered_documents.append(doc)
             else:
-                logger.info(f"Document {idx + 1}: Relevance check - IRRELEVANT.")
+                logger.info(f"Document {idx + 1}: Relevance check - IRRELEVANT (Grade: {grade}).")
         except Exception as e:
             logger.error(f"Error grading document {idx + 1}: {str(e)}")
             # Fail closed: do not include the doc if grading failed
@@ -98,7 +99,7 @@ async def generate_node(state: AgentState) -> Dict[str, Any]:
         A dictionary containing the generated text answer.
     """
     logger.info("LangGraph Node: [generate_node] - Initiated.")
-    question = state.get("question", "")
+    original_question = state.get("original_question") or state.get("question", "")
     documents = state.get("documents", [])
 
     # Format excerpts with metadata for prompt ingestion
@@ -115,7 +116,7 @@ async def generate_node(state: AgentState) -> Dict[str, Any]:
     try:
         generation = await generator_chain.ainvoke({
             "context": context_str,
-            "question": question
+            "question": original_question
         })
         logger.info("LangGraph Node: [generate_node] - Text generated successfully.")
         return {"generation": generation}
@@ -136,14 +137,14 @@ async def rewrite_node(state: AgentState) -> Dict[str, Any]:
         A dictionary updating the question query and the search retry count.
     """
     logger.info("LangGraph Node: [rewrite_node] - Initiated.")
-    question = state.get("question", "")
+    original_question = state.get("original_question") or state.get("question", "")
     current_retry = state.get("search_retry_count", 0)
 
     try:
         # Call query rewriter chain
-        rewritten = await question_rewriter_chain.ainvoke({"question": question})
+        rewritten = await question_rewriter_chain.ainvoke({"question": original_question})
         optimized_query = rewritten.strip()
-        logger.info(f"LangGraph Node: [rewrite_node] - Query optimized: '{question}' -> '{optimized_query}'")
+        logger.info(f"LangGraph Node: [rewrite_node] - Query optimized: '{original_question}' -> '{optimized_query}'")
         return {
             "question": optimized_query,
             "search_retry_count": current_retry + 1

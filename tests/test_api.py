@@ -23,11 +23,13 @@ async def test_stream_chat_endpoint(monkeypatch):
         yield {
             "event": "on_chat_model_stream",
             "name": "chat_model",
+            "tags": ["citadel_generation"],
             "data": {"chunk": MagicMock(content="Jon")}
         }
         yield {
             "event": "on_chat_model_stream",
             "name": "chat_model",
+            "tags": ["citadel_generation"],
             "data": {"chunk": MagicMock(content=" Snow")}
         }
         yield {

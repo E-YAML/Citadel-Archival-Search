@@ -37,3 +37,8 @@ class AgentState(TypedDict):
     An integer counter tracking the number of times the system has rewritten 
     the search query and executed a new retrieval, preventing infinite retrieval loops.
     """
+    
+    original_question: str
+    """
+    The original, unmodified question query supplied by the user (preserving any typos).
+    """

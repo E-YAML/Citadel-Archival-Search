@@ -169,7 +169,10 @@ if user_prompt := st.chat_input("Ask a question about Westeros lore..."):
                                 pass
 
             # Save assistant output
-            if full_response:
+            if not full_response:
+                status_box.update(label="Search Complete (No Results)", state="complete", expanded=True)
+                response_placeholder.warning("⚠️ The Citadel Maesters searched the archives but found no relevant source documents to construct a verified answer.")
+            else:
                 st.session_state.messages.append({"role": "assistant", "content": full_response})
 
         except requests.exceptions.RequestException as e:

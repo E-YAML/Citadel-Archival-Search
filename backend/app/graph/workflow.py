@@ -56,7 +56,7 @@ async def check_hallucinations(state: AgentState) -> str:
         logger.warning(f"Routing to END: Max retry threshold reached post-generation ({retry_count}).")
         return END
 
-    question = state.get("question", "")
+    original_question = state.get("original_question") or state.get("question", "")
     generation = state.get("generation", "")
     documents = state.get("documents", [])
 
@@ -69,7 +69,7 @@ async def check_hallucinations(state: AgentState) -> str:
             "documents": docs_context,
             "generation": generation
         })
-        if hallucination_result.has_hallucination:
+        if "no" in hallucination_result.strip().lower():
             logger.info("Grader check: Hallucination detected. Routing to rewrite.")
             return "rewrite"
         logger.info("Grader check: Generation is grounded. Proceeding to answer relevancy evaluation...")
@@ -80,10 +80,10 @@ async def check_hallucinations(state: AgentState) -> str:
     # 2. Answer Relevancy Check (Addresses the question)
     try:
         answer_result = await answer_grader_chain.ainvoke({
-            "question": question,
+            "question": original_question,
             "generation": generation
         })
-        if answer_result.is_valid:
+        if "yes" in answer_result.strip().lower():
             logger.info("Grader check: Answer resolved the user question. Routing to END.")
             return END
         logger.info("Grader check: Answer is grounded but does not address the question. Routing to rewrite.")

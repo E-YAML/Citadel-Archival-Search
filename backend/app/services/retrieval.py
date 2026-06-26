@@ -128,7 +128,7 @@ async def retrieve_graph_context(query: str) -> str:
             WHERE toLower($query) CONTAINS toLower(c.name)
             RETURN c.name AS name
             """
-            result = await session.run(find_query, query=query)
+            result = await session.run(find_query, parameters={"query": query})
             records = await result.data()
             names = [r["name"] for r in records]
             
@@ -145,7 +145,7 @@ async def retrieve_graph_context(query: str) -> str:
                 MATCH (c:Character {name: $name})
                 RETURN c.name AS name, c.house AS house, c.status AS status
                 """
-                prop_result = await session.run(prop_query, name=name)
+                prop_result = await session.run(prop_query, parameters={"name": name})
                 prop_record = await prop_result.single()
                 
                 props_str = f"Character {name}"
@@ -165,7 +165,7 @@ async def retrieve_graph_context(query: str) -> str:
                 MATCH (c:Character {name: $name})-[r]-(o:Character)
                 RETURN c.name AS c_name, type(r) AS rel_type, o.name AS o_name, startNode(r) = c AS is_outbound
                 """
-                rel_result = await session.run(rel_query, name=name)
+                rel_result = await session.run(rel_query, parameters={"name": name})
                 rel_records = await rel_result.data()
                 
                 relationships_str = ""

@@ -40,54 +40,61 @@ class GradeAnswer(BaseModel):
 # Standard model for quick evaluation tasks
 llm_grade = ChatGroq(
     api_key=settings.GROQ_API_KEY,
-    model="llama3-8b-8192",
+    model="llama-3.1-8b-instant",
     temperature=0.0
 )
 
 # Advanced model for response generation tasks
 llm_generate = ChatGroq(
     api_key=settings.GROQ_API_KEY,
-    model="llama3-70b-8192",
+    model="llama-3.3-70b-versatile",
     temperature=0.0
 )
 
 
 # --- Chain Formulations ---
 
-# 1. Document Relevance Grader Chain
+# 1. Document Relevance Grader Chain (Text-based, robust)
 retrieval_grader_prompt = ChatPromptTemplate.from_messages([
     ("system", "You are an objective grader assessing relevance of a retrieved document to a user question.\n"
-               "Analyze the document text. If it contains information, keywords, or semantic meaning relevant to the user question, grade it as relevant.\n"
-               "Provide a strict binary decision: True (relevant) or False (irrelevant)."),
+               "Analyze the document text. If it contains information, keywords, or semantic meaning relevant to the user question, output ONLY 'yes'. Otherwise, output 'no'.\n"
+               "Do not output any other text or explanation. Only output 'yes' or 'no'."),
     ("human", "Retrieved Document:\n\n{document}\n\nUser Question: {question}")
 ])
-retrieval_grader_chain = retrieval_grader_prompt | llm_grade.with_structured_output(GradeDocuments)
+retrieval_grader_chain = retrieval_grader_prompt | llm_grade | StrOutputParser()
 
 
-# 2. Hallucination Grader Chain
+# 2. Hallucination Grader Chain (Text-based, robust)
 hallucination_grader_prompt = ChatPromptTemplate.from_messages([
     ("system", "You are an objective grader assessing whether an LLM generation is grounded in / supported by a set of retrieved documents.\n"
-               "If the generated response contains ANY facts, details, or claims that cannot be directly verified or inferred from the context documents, mark it as containing hallucinations (True).\n"
-               "If all claims in the generation are fully supported, mark it as grounded without hallucinations (False)."),
+               "Analyze the generated response and the context documents. If the generated response is fully grounded in and supported by the context documents, output ONLY 'yes'. If the generated response contains ANY facts, claims, or details that cannot be verified or inferred from the context documents, output ONLY 'no'.\n"
+               "Do not output any other text or explanation. Only output 'yes' or 'no'."),
     ("human", "Retrieved Documents Context:\n\n{documents}\n\nLLM Generation:\n\n{generation}")
 ])
-hallucination_grader_chain = hallucination_grader_prompt | llm_grade.with_structured_output(GradeHallucinations)
+hallucination_grader_chain = hallucination_grader_prompt | llm_grade | StrOutputParser()
 
 
-# 3. Answer Grader Chain
+# 3. Answer Grader Chain (Text-based, robust)
 answer_grader_prompt = ChatPromptTemplate.from_messages([
     ("system", "You are an objective grader assessing whether a generated answer addresses or resolves the user question.\n"
-               "Grade as True if the answer addresses the core question directly and provides a resolution. Grade as False if it is irrelevant, evasive, or fails to address the question."),
+               "Analyze the generated response. If the answer addresses the core question directly and provides a resolution, output ONLY 'yes'. Otherwise, output 'no'.\n"
+               "Do not output any other text or explanation. Only output 'yes' or 'no'."),
     ("human", "User Question: {question}\n\nLLM Generation:\n\n{generation}")
 ])
-answer_grader_chain = answer_grader_prompt | llm_grade.with_structured_output(GradeAnswer)
+answer_grader_chain = answer_grader_prompt | llm_grade | StrOutputParser()
+
 
 
 # 4. Question Query Rewriter Chain
 rewriter_prompt = ChatPromptTemplate.from_messages([
-    ("system", "You are an expert search query optimizer. You are given a user question that failed to return relevant search results.\n"
-               "Rewrite the question into a highly optimized search query designed for vector and keyword-based hybrid search. "
-               "Focus on core entities, locations, and semantic terms. Return ONLY the rewritten query text, with no introductory or explanatory remarks."),
+    ("system", "You are an expert search query optimizer for Westeros archives (A Song of Ice and Fire / Game of Thrones).\n"
+               "You are given a user question that failed to return relevant search results.\n"
+               "Your goal is to rewrite the question into a highly optimized search query for vector and keyword-based hybrid search of ASOIAF lore.\n"
+               "Follow these guidelines:\n"
+               "1. Identify and correct any potential spelling errors, typos, or phonetic/misremembered names or terms (e.g., 'deanerys' -> 'Daenerys', 'train' -> 'trade' or 'exchange' if referring to Viserys and Daenerys, 'khal drogo' -> 'Khal Drogo', etc.).\n"
+               "2. Think about what canon ASOIAF event or relationship the user is likely asking about, and ensure the query reflects the correct canonical concepts.\n"
+               "3. Focus on keywords and semantic terms related to the query (e.g., names of characters, events, objects, books, chapters).\n"
+               "4. Return ONLY the optimized query text itself, with no quotes, introductory, or explanatory remarks."),
     ("human", "Failing Question: {question}\nOptimized Query:")
 ])
 question_rewriter_chain = rewriter_prompt | llm_grade | StrOutputParser()
@@ -103,4 +110,4 @@ generator_prompt = ChatPromptTemplate.from_messages([
                "4. Format your final response in clean Markdown with citations clearly displayed."),
     ("human", "Context Documents:\n\n{context}\n\nUser Question: {question}")
 ])
-generator_chain = generator_prompt | llm_generate | StrOutputParser()
+generator_chain = (generator_prompt | llm_generate | StrOutputParser()).with_config({"tags": ["citadel_generation"]})

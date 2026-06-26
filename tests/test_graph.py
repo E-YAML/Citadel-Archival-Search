@@ -67,8 +67,8 @@ async def test_grade_documents_node(monkeypatch):
     mock_grader = AsyncMock()
     # Grade first doc relevant, second irrelevant
     mock_grader.ainvoke.side_effect = [
-        MagicMock(is_relevant=True),
-        MagicMock(is_relevant=False)
+        "yes",
+        "no"
     ]
     monkeypatch.setattr("app.graph.nodes.retrieval_grader_chain", mock_grader)
 
@@ -133,17 +133,17 @@ async def test_check_hallucinations(monkeypatch):
     monkeypatch.setattr("app.graph.workflow.hallucination_grader_chain", mock_hallucination)
     monkeypatch.setattr("app.graph.workflow.answer_grader_chain", mock_answer)
 
-    # Case 1: Hallucination detected -> route to rewrite
-    mock_hallucination.ainvoke.return_value = MagicMock(has_hallucination=True)
+    # Case 1: Hallucination detected (returns "no") -> route to rewrite
+    mock_hallucination.ainvoke.return_value = "no"
     state = {"search_retry_count": 0, "question": "Q", "generation": "Gen", "documents": []}
     assert await check_hallucinations(state) == "rewrite"
 
-    # Case 2: No hallucination, but answer is invalid -> route to rewrite
-    mock_hallucination.ainvoke.return_value = MagicMock(has_hallucination=False)
-    mock_answer.ainvoke.return_value = MagicMock(is_valid=False)
+    # Case 2: No hallucination (returns "yes"), but answer is invalid (returns "no") -> route to rewrite
+    mock_hallucination.ainvoke.return_value = "yes"
+    mock_answer.ainvoke.return_value = "no"
     assert await check_hallucinations(state) == "rewrite"
 
-    # Case 3: Grounded and valid -> route to END
-    mock_hallucination.ainvoke.return_value = MagicMock(has_hallucination=False)
-    mock_answer.ainvoke.return_value = MagicMock(is_valid=True)
+    # Case 3: Grounded (returns "yes") and valid (returns "yes") -> route to END
+    mock_hallucination.ainvoke.return_value = "yes"
+    mock_answer.ainvoke.return_value = "yes"
     assert await check_hallucinations(state) == "__end__"
