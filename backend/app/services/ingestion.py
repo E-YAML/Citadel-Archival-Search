@@ -140,68 +140,72 @@ class ASOIAFIngestionPipeline:
     async def upload_to_qdrant(self, chunks: List[Document], collection_name: str) -> None:
         """
         Calculates deterministic UUIDv5 coordinates for idempotency, generates
-        hybrid (dense + sparse) embeddings, and pushes batch uploads to Qdrant.
+        hybrid (dense + sparse) embeddings in memory-safe batches, and pushes uploads to Qdrant.
         """
         if not chunks:
             logger.warning("No chunks provided for upload.")
             return
 
         client = self.qdrant_service.get_client()
-
-        # Extract raw texts for vector models
-        texts = [chunk.page_content for chunk in chunks]
-
-        # Generate vectors
         dense_model = self.get_dense_model()
         sparse_model = self.get_sparse_model()
 
-        logger.info(f"Generating dense embeddings for {len(texts)} chunks...")
-        dense_embeddings = list(dense_model.embed(texts))
-
-        logger.info(f"Generating sparse embeddings for {len(texts)} chunks...")
-        sparse_embeddings = list(sparse_model.embed(texts))
-
-        # Build Qdrant PointStruct array
-        points: List[models.PointStruct] = []
-        
-        # Set Namespace UUID for deterministic UUIDv5 generation
+        # Batch configuration to avoid MemoryError (especially with Splade on CPU)
+        batch_size = 128
+        total_chunks = len(chunks)
         namespace_uuid = uuid.UUID("8c2901fa-9a57-4b13-8cfb-eb4a961f6e24")
 
-        for i, chunk in enumerate(chunks):
-            # Compute deterministic ID
-            unique_key = f"{chunk.metadata['book_title']}_{chunk.metadata['chapter_title']}_{chunk.metadata['chunk_index']}"
-            point_uuid = str(uuid.uuid5(namespace_uuid, unique_key))
+        logger.info(f"Uploading {total_chunks} chunks to Qdrant in batches of {batch_size}...")
 
-            dense_vector = dense_embeddings[i].tolist()
-            sparse_vector = sparse_embeddings[i]
+        for batch_start in range(0, total_chunks, batch_size):
+            batch_chunks = chunks[batch_start : batch_start + batch_size]
+            batch_texts = [chunk.page_content for chunk in batch_chunks]
 
-            points.append(
-                models.PointStruct(
-                    id=point_uuid,
-                    vector={
-                        "": dense_vector,  # Unnamed default vector
-                        "sparse-text": models.SparseVector(
-                            indices=sparse_vector.indices.tolist(),
-                            values=sparse_vector.values.tolist()
-                        )
-                    },
-                    payload={
-                        "page_content": chunk.page_content,
-                        **chunk.metadata
-                    }
+            logger.info(f"Processing batch {batch_start//batch_size + 1}/{(total_chunks + batch_size - 1)//batch_size} (size={len(batch_texts)})...")
+            
+            # Generate vectors for current batch
+            try:
+                dense_embeddings = list(dense_model.embed(batch_texts))
+                sparse_embeddings = list(sparse_model.embed(batch_texts))
+            except Exception as embed_err:
+                logger.error(f"Embedding generation failed for batch starting at {batch_start}: {embed_err}")
+                raise
+
+            points: List[models.PointStruct] = []
+            for i, chunk in enumerate(batch_chunks):
+                unique_key = f"{chunk.metadata['book_title']}_{chunk.metadata['chapter_title']}_{chunk.metadata['chunk_index']}"
+                point_uuid = str(uuid.uuid5(namespace_uuid, unique_key))
+
+                dense_vector = dense_embeddings[i].tolist()
+                sparse_vector = sparse_embeddings[i]
+
+                points.append(
+                    models.PointStruct(
+                        id=point_uuid,
+                        vector={
+                            "": dense_vector,
+                            "sparse-text": models.SparseVector(
+                                indices=sparse_vector.indices.tolist(),
+                                values=sparse_vector.values.tolist()
+                            )
+                        },
+                        payload={
+                            "page_content": chunk.page_content,
+                            **chunk.metadata
+                        }
+                    )
                 )
-            )
 
-        logger.info(f"Upserting {len(points)} vectors to Qdrant collection '{collection_name}'...")
-        try:
-            await client.upsert(
-                collection_name=collection_name,
-                points=points
-            )
-            logger.info("Qdrant batch upload completed successfully.")
-        except Exception as e:
-            logger.error(f"Error during Qdrant upload: {str(e)}")
-            raise QdrantConnectionError(f"Qdrant bulk load failed: {str(e)}") from e
+            try:
+                await client.upsert(
+                    collection_name=collection_name,
+                    points=points
+                )
+            except Exception as e:
+                logger.error(f"Error during Qdrant batch upsert: {str(e)}")
+                raise QdrantConnectionError(f"Qdrant bulk load failed: {str(e)}") from e
+
+        logger.info("Qdrant upload completed successfully for all batches.")
 
     async def seed_sample_lineage(self) -> None:
         """
