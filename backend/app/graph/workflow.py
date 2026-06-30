@@ -1,8 +1,5 @@
 from langgraph.graph import StateGraph, START, END
 import os
-import sqlite3
-import tempfile
-from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.checkpoint.memory import MemorySaver
 from loguru import logger
 
@@ -136,24 +133,10 @@ workflow.add_edge("rewrite", "retrieve")
 
 
 # --- Checkpointer Setup ---
-# Prefer SQLite for persistence. Default path resolves to the system temp directory,
-# which is writable on both local Windows (%TEMP%) and Streamlit Cloud (/tmp).
-# Falls back to in-memory MemorySaver if SQLite cannot be opened.
-
-def _build_checkpointer():
-    db_path = settings.CHECKPOINT_DB_PATH or os.path.join(
-        tempfile.gettempdir(), "citadel_checkpoints.db"
-    )
-    try:
-        conn = sqlite3.connect(db_path, check_same_thread=False)
-        logger.info(f"Checkpoint database opened at: {db_path}")
-        return SqliteSaver(conn)
-    except Exception as e:
-        logger.warning(f"SQLite checkpoint unavailable ({e}). Using in-memory MemorySaver.")
-        return MemorySaver()
-
-
-memory = _build_checkpointer()
+# Use in-memory MemorySaver to support async graph execution natively.
+# This prevents async compatibility errors (like SqliteSaver async errors)
+# and runs with zero file dependencies on Streamlit Cloud.
+memory = MemorySaver()
 
 # Compile the runnable graph app
 app = workflow.compile(checkpointer=memory)
