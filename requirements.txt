@@ -1,23 +1,48 @@
-fastapi>=0.111.0
-uvicorn>=0.30.0
-pydantic>=2.7.0
-pydantic-settings>=2.3.0
+# Core LangChain / LangGraph stack
 langchain>=0.2.0
 langchain-core>=0.2.0
 langchain-community>=0.2.0
 langgraph>=0.1.0
 langchain-groq>=0.1.0
-qdrant-client>=1.9.0
-neo4j>=5.20.0
-loguru>=0.7.2
-fastembed>=0.3.0
-slowapi>=0.1.9
-pytest>=8.0.0
-pytest-asyncio>=0.23.0
 langgraph-checkpoint-sqlite>=3.0.0
+
+# Vector DB
+qdrant-client>=1.9.0
+
+# Graph DB
+neo4j>=5.20.0
+
+# Embeddings (local ONNX models — fastembed)
+fastembed>=0.3.0
+
+# Pydantic / Settings
+pydantic>=2.7.0
+pydantic-settings>=2.3.0
+
+# Streamlit UI
+streamlit>=1.35.0
+
+# Utilities
 tiktoken>=0.5.0
 aiosqlite>=0.20.0
-streamlit>=1.35.0
+loguru>=0.7.2
 requests>=2.31.0
 
+# Dev / Testing (not needed on Streamlit Cloud)
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
 
+# ─────────────────────────────────────────────────────────────────
+# NOTE: The following packages are intentionally EXCLUDED from this
+# file since the collapsed Streamlit-only architecture no longer
+# uses a separate FastAPI server:
+#   fastapi, uvicorn, slowapi
+#
+# They remain in backend/Dockerfile for the optional Render/Railway
+# deployment path (future plan).
+#
+# NOTE: ebooklib and beautifulsoup4 are used only for the one-time
+# local epub conversion (data/convert_epubs.py) and are NOT needed
+# on Streamlit Cloud. Install them locally with:
+#   pip install ebooklib beautifulsoup4
+# ─────────────────────────────────────────────────────────────────

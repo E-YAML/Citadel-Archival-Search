@@ -6,6 +6,8 @@ class Settings(BaseSettings):
     """
     Application settings validated via Pydantic.
     Reads from environment variables or a .env file.
+    On Streamlit Cloud, secrets are injected into os.environ by streamlit_app.py
+    before this class is instantiated.
     """
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -33,7 +35,8 @@ class Settings(BaseSettings):
     LANGCHAIN_API_KEY: Optional[str] = None
 
     # Production Architecture Configuration
-    CHECKPOINT_DB_PATH: str = "citadel_checkpoints.db"
+    # Default None → workflow.py resolves to tempfile.gettempdir() at runtime
+    CHECKPOINT_DB_PATH: Optional[str] = None
     ALLOWED_ORIGINS: list[str] = ["http://localhost:8501"]
     RATE_LIMIT_LIMIT: int = 10
     RATE_LIMIT_PERIOD: int = 60
@@ -42,3 +45,4 @@ class Settings(BaseSettings):
 
 # Instantiate single global settings object
 settings = Settings()
+

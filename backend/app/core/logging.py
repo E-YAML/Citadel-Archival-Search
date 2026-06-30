@@ -1,7 +1,15 @@
+import io
 import logging
 import sys
 from typing import Union
 from loguru import logger
+
+# Ensure stdout uses UTF-8 on Windows (prevents cp1252 UnicodeEncodeError for emoji in logs)
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
 
 
 class InterceptHandler(logging.Handler):
@@ -53,6 +61,7 @@ def setup_logging() -> None:
         logging_logger.propagate = False
 
     # Configure Loguru to serialize all output to JSON and send to stdout
+    # encoding='utf-8' prevents cp1252 failures on Windows for emoji in log messages
     logger.remove()
     logger.add(
         sys.stdout,

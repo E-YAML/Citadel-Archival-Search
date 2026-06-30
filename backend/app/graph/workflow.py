@@ -1,6 +1,9 @@
 from langgraph.graph import StateGraph, START, END
+import os
 import sqlite3
+import tempfile
 from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.checkpoint.memory import MemorySaver
 from loguru import logger
 
 from app.core.config import settings
@@ -19,10 +22,10 @@ def decide_to_generate(state: AgentState) -> str:
     """
     Decides whether to route to the answer generation node or search query rewrite node,
     subject to max retry thresholds.
-    
+
     Args:
         state: The current LangGraph AgentState.
-        
+
     Returns:
         The name of the next node to transition to.
     """
@@ -44,10 +47,10 @@ async def check_hallucinations(state: AgentState) -> str:
     """
     Evaluates grounding and accuracy of the generated answer. Routes back to query
     rewrite if the answer fails validation or contains hallucinations.
-    
+
     Args:
         state: The current LangGraph AgentState.
-        
+
     Returns:
         The name of the next node to transition to.
     """
@@ -131,9 +134,26 @@ workflow.add_conditional_edges(
 # Set up Transition back to Retrieval from Query Rewrite Node
 workflow.add_edge("rewrite", "retrieve")
 
-# Enable persistent sqlite checkpoint database for thread tracking
-conn = sqlite3.connect(settings.CHECKPOINT_DB_PATH, check_same_thread=False)
-memory = SqliteSaver(conn)
+
+# --- Checkpointer Setup ---
+# Prefer SQLite for persistence. Default path resolves to the system temp directory,
+# which is writable on both local Windows (%TEMP%) and Streamlit Cloud (/tmp).
+# Falls back to in-memory MemorySaver if SQLite cannot be opened.
+
+def _build_checkpointer():
+    db_path = settings.CHECKPOINT_DB_PATH or os.path.join(
+        tempfile.gettempdir(), "citadel_checkpoints.db"
+    )
+    try:
+        conn = sqlite3.connect(db_path, check_same_thread=False)
+        logger.info(f"Checkpoint database opened at: {db_path}")
+        return SqliteSaver(conn)
+    except Exception as e:
+        logger.warning(f"SQLite checkpoint unavailable ({e}). Using in-memory MemorySaver.")
+        return MemorySaver()
+
+
+memory = _build_checkpointer()
 
 # Compile the runnable graph app
 app = workflow.compile(checkpointer=memory)

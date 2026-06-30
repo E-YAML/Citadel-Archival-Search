@@ -1,5 +1,6 @@
 # Secrets
 .env
+.streamlit/secrets.toml
 
 # Python artifacts
 __pycache__/
@@ -8,10 +9,18 @@ __pycache__/
 venv/
 env/
 .venv/
+.pytest_cache/
 
 # Database local storage
 qdrant_storage/
 neo4j_storage/
+*.db
+
+# Copyrighted source data — do not commit
+data/*.epub
+data/*.txt
+!data/game_of_thrones_sample.txt
+!data/README.md
 
 # IDE / OS configs
 .idea/
