@@ -60,8 +60,18 @@ async def check_hallucinations(state: AgentState) -> str:
     generation = state.get("generation", "")
     documents = state.get("documents", [])
 
-    # Concatenate context texts
-    docs_context = "\n\n".join([doc.page_content for doc in documents])
+    # Concatenate context texts with metadata so that the hallucination grader can verify citations
+    context_excerpts = []
+    for doc in documents:
+        meta = doc.metadata or {}
+        book = meta.get("book_title", "Unknown Book")
+        if " -- " in book:
+            book = book.split(" -- ")[0]
+        chapter = meta.get("chapter_title", "Unknown Chapter")
+        context_excerpts.append(
+            f"Excerpt from '{book}' (Chapter: {chapter}):\n{doc.page_content}"
+        )
+    docs_context = "\n\n".join(context_excerpts)
 
     # 1. Grounding/Hallucination Check
     try:

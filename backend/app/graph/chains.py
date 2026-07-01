@@ -57,7 +57,7 @@ llm_generate = ChatGroq(
 # 1. Document Relevance Grader Chain (Text-based, robust)
 retrieval_grader_prompt = ChatPromptTemplate.from_messages([
     ("system", "You are an objective grader assessing relevance of a retrieved document to a user question.\n"
-               "Analyze the document text. If it contains information, keywords, or semantic meaning relevant to the user question, output ONLY 'yes'. Otherwise, output 'no'.\n"
+               "Analyze the document text. If the document contains any details, facts, or mentions related to the characters, entities, or topics in the user question, output ONLY 'yes'. Otherwise, output 'no'.\n"
                "Do not output any other text or explanation. Only output 'yes' or 'no'."),
     ("human", "Retrieved Document:\n\n{document}\n\nUser Question: {question}")
 ])
@@ -71,7 +71,7 @@ hallucination_grader_prompt = ChatPromptTemplate.from_messages([
                "Do not output any other text or explanation. Only output 'yes' or 'no'."),
     ("human", "Retrieved Documents Context:\n\n{documents}\n\nLLM Generation:\n\n{generation}")
 ])
-hallucination_grader_chain = hallucination_grader_prompt | llm_grade | StrOutputParser()
+hallucination_grader_chain = hallucination_grader_prompt | llm_generate | StrOutputParser()
 
 
 # 3. Answer Grader Chain (Text-based, robust)
@@ -81,7 +81,7 @@ answer_grader_prompt = ChatPromptTemplate.from_messages([
                "Do not output any other text or explanation. Only output 'yes' or 'no'."),
     ("human", "User Question: {question}\n\nLLM Generation:\n\n{generation}")
 ])
-answer_grader_chain = answer_grader_prompt | llm_grade | StrOutputParser()
+answer_grader_chain = answer_grader_prompt | llm_generate | StrOutputParser()
 
 
 
@@ -91,23 +91,25 @@ rewriter_prompt = ChatPromptTemplate.from_messages([
                "You are given a user question that failed to return relevant search results.\n"
                "Your goal is to rewrite the question into a highly optimized search query for vector and keyword-based hybrid search of ASOIAF lore.\n"
                "Follow these guidelines:\n"
-               "1. Identify and correct any potential spelling errors, typos, or phonetic/misremembered names or terms (e.g., 'deanerys' -> 'Daenerys', 'train' -> 'trade' or 'exchange' if referring to Viserys and Daenerys, 'khal drogo' -> 'Khal Drogo', etc.).\n"
-               "2. Think about what canon ASOIAF event or relationship the user is likely asking about, and ensure the query reflects the correct canonical concepts.\n"
-               "3. Focus on keywords and semantic terms related to the query (e.g., names of characters, events, objects, books, chapters).\n"
-               "4. Return ONLY the optimized query text itself, with no quotes, introductory, or explanatory remarks."),
+               "1. Identify and correct any spelling errors, typos, or phonetic/misremembered names or terms (e.g., 'daemon targeryan' -> 'Daemon Targaryen', 'deanerys' -> 'Daenerys', etc.).\n"
+               "2. Extract the core entities, characters, and subjects of the query.\n"
+               "3. Do NOT add external assumptions, speculative plot details, or hallucinated historical contexts not present in the original question (e.g. do not guess how or when a character died if not asked, as this will overly restrict search results).\n"
+               "4. Keep the query clean, simple, and focused on key entities to maximize search coverage.\n"
+               "5. Return ONLY the optimized query text itself, with no quotes, introductory, or explanatory remarks."),
     ("human", "Failing Question: {question}\nOptimized Query:")
 ])
-question_rewriter_chain = rewriter_prompt | llm_grade | StrOutputParser()
+question_rewriter_chain = rewriter_prompt | llm_generate | StrOutputParser()
 
 
 # 5. Citadel Maester Generator Chain
 generator_prompt = ChatPromptTemplate.from_messages([
-    ("system", "You are an expert Maester of the Citadel. Answer the user question ONLY using the provided excerpts from the 'A Song of Ice and Fire' books.\n"
-               "You must adhere strictly to these rules:\n"
+    ("system", "You are an expert Maester of the Citadel. Answer the user question ONLY using the provided Context Documents.\n"
+               "CRITICAL: Do NOT introduce any external facts, characters, details, or lore not explicitly mentioned in the provided Context Documents.\n"
+               "Your answer must be 100% grounded in the Context Documents. If a detail is not explicitly written in the Context Documents, you must treat it as completely unknown and never mention it.\n"
+               "Rules:\n"
                "1. For every fact, claim, or statement you make, you MUST explicitly cite the book title and chapter title (from the document metadata).\n"
                "2. If the answer cannot be found in the provided excerpts, say: 'Based on the archival scrolls of the Citadel, I do not possess this knowledge.'\n"
-               "3. Do not make up information or introduce external lore outside of the context.\n"
-               "4. Format your final response in clean Markdown with citations clearly displayed."),
+               "3. Format your final response in clean Markdown with citations clearly displayed."),
     ("human", "Context Documents:\n\n{context}\n\nUser Question: {question}")
 ])
 generator_chain = (generator_prompt | llm_generate | StrOutputParser()).with_config({"tags": ["citadel_generation"]})

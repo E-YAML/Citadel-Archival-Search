@@ -57,7 +57,7 @@ async def retrieve_vector_context(query: str, limit: int = 4) -> List[Dict[str, 
             prefetch=[
                 models.Prefetch(
                     query=dense_query_vec,
-                    limit=limit
+                    limit=50
                 ),
                 models.Prefetch(
                     query=models.SparseVector(
@@ -65,7 +65,7 @@ async def retrieve_vector_context(query: str, limit: int = 4) -> List[Dict[str, 
                         values=sparse_query_vec.values.tolist()
                     ),
                     using="sparse-text",
-                    limit=limit
+                    limit=50
                 )
             ],
             query=models.FusionQuery(
@@ -122,10 +122,11 @@ async def retrieve_graph_context(query: str) -> str:
     try:
         driver = neo4j_service.get_driver()
         async with driver.session() as session:
-            # Find characters mentioned in the query
+            # Find characters mentioned in the query (robust to first/last name subsets)
             find_query = """
             MATCH (c:Character)
-            WHERE toLower($query) CONTAINS toLower(c.name)
+            WHERE toLower($query) CONTAINS toLower(c.name) OR
+                  any(word IN split(c.name, ' ') WHERE size(word) >= 4 AND toLower($query) CONTAINS toLower(word))
             RETURN c.name AS name
             """
             result = await session.run(find_query, parameters={"query": query})

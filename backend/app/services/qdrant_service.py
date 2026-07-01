@@ -31,6 +31,7 @@ class QdrantService:
                 self._client = AsyncQdrantClient(
                     url=settings.QDRANT_URL,
                     api_key=settings.QDRANT_API_KEY,
+                    timeout=60.0
                 )
                 logger.info("AsyncQdrantClient successfully initialized.")
             except Exception as e:

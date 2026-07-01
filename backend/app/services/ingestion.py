@@ -146,7 +146,6 @@ class ASOIAFIngestionPipeline:
             logger.warning("No chunks provided for upload.")
             return
 
-        client = self.qdrant_service.get_client()
         dense_model = self.get_dense_model()
         sparse_model = self.get_sparse_model()
 
@@ -155,57 +154,70 @@ class ASOIAFIngestionPipeline:
         total_chunks = len(chunks)
         namespace_uuid = uuid.UUID("8c2901fa-9a57-4b13-8cfb-eb4a961f6e24")
 
-        logger.info(f"Uploading {total_chunks} chunks to Qdrant in batches of {batch_size}...")
+        logger.info(f"Generating embeddings for {total_chunks} chunks in batches of {batch_size}...")
+
+        dense_embeddings = []
+        sparse_embeddings = []
 
         for batch_start in range(0, total_chunks, batch_size):
             batch_chunks = chunks[batch_start : batch_start + batch_size]
             batch_texts = [chunk.page_content for chunk in batch_chunks]
 
-            logger.info(f"Processing batch {batch_start//batch_size + 1}/{(total_chunks + batch_size - 1)//batch_size} (size={len(batch_texts)})...")
+            logger.info(f"Embedding batch {batch_start//batch_size + 1}/{(total_chunks + batch_size - 1)//batch_size} (size={len(batch_texts)})...")
             
-            # Generate vectors for current batch
             try:
-                dense_embeddings = list(dense_model.embed(batch_texts))
-                sparse_embeddings = list(sparse_model.embed(batch_texts))
+                batch_dense = list(dense_model.embed(batch_texts))
+                batch_sparse = list(sparse_model.embed(batch_texts))
+                dense_embeddings.extend(batch_dense)
+                sparse_embeddings.extend(batch_sparse)
             except Exception as embed_err:
                 logger.error(f"Embedding generation failed for batch starting at {batch_start}: {embed_err}")
                 raise
 
-            points: List[models.PointStruct] = []
-            for i, chunk in enumerate(batch_chunks):
-                unique_key = f"{chunk.metadata['book_title']}_{chunk.metadata['chapter_title']}_{chunk.metadata['chunk_index']}"
-                point_uuid = str(uuid.uuid5(namespace_uuid, unique_key))
+        # Construct points list
+        points: List[models.PointStruct] = []
+        for i, chunk in enumerate(chunks):
+            unique_key = f"{chunk.metadata['book_title']}_{chunk.metadata['chapter_title']}_{chunk.metadata['chunk_index']}"
+            point_uuid = str(uuid.uuid5(namespace_uuid, unique_key))
 
-                dense_vector = dense_embeddings[i].tolist()
-                sparse_vector = sparse_embeddings[i]
+            dense_vector = dense_embeddings[i].tolist()
+            sparse_vector = sparse_embeddings[i]
 
-                points.append(
-                    models.PointStruct(
-                        id=point_uuid,
-                        vector={
-                            "": dense_vector,
-                            "sparse-text": models.SparseVector(
-                                indices=sparse_vector.indices.tolist(),
-                                values=sparse_vector.values.tolist()
-                            )
-                        },
-                        payload={
-                            "page_content": chunk.page_content,
-                            **chunk.metadata
-                        }
-                    )
+            points.append(
+                models.PointStruct(
+                    id=point_uuid,
+                    vector={
+                        "": dense_vector,
+                        "sparse-text": models.SparseVector(
+                            indices=sparse_vector.indices.tolist(),
+                            values=sparse_vector.values.tolist()
+                        )
+                    },
+                    payload={
+                        "page_content": chunk.page_content,
+                        **chunk.metadata
+                    }
                 )
+            )
 
+        # Upload points to Qdrant in quick succession (no slow CPU work in between)
+        client = self.qdrant_service.get_client()
+        upload_batch_size = 256
+        logger.info(f"Uploading {len(points)} points to Qdrant collection '{collection_name}' in batches of {upload_batch_size}...")
+        
+        for upload_start in range(0, len(points), upload_batch_size):
+            upload_points = points[upload_start : upload_start + upload_batch_size]
+            logger.info(f"Upserting points {upload_start} to {min(len(points), upload_start + upload_batch_size)}...")
             try:
                 await client.upsert(
                     collection_name=collection_name,
-                    points=points
+                    points=upload_points
                 )
             except Exception as e:
-                logger.error(f"Error during Qdrant batch upsert: {str(e)}")
+                logger.error(f"Error during Qdrant batch upsert at range {upload_start}: {str(e)}")
                 raise QdrantConnectionError(f"Qdrant bulk load failed: {str(e)}") from e
 
-        logger.info("Qdrant upload completed successfully for all batches.")
+        logger.info("Qdrant upload completed successfully for all points.")
 
     async def seed_sample_lineage(self) -> None:
         """
@@ -216,11 +228,39 @@ class ASOIAFIngestionPipeline:
         
         # Cypher MERGE queries to avoid duplicates
         queries = [
+            # Jon Snow & Lyanna & Rhaegar
             "MERGE (j:Character {name: 'Jon Snow'}) SET j.house = 'Stark', j.status = 'Bastard'",
             "MERGE (l:Character {name: 'Lyanna Stark'}) SET l.house = 'Stark'",
             "MERGE (r:Character {name: 'Rhaegar Targaryen'}) SET r.house = 'Targaryen'",
             "MATCH (j:Character {name: 'Jon Snow'}), (l:Character {name: 'Lyanna Stark'}) MERGE (j)-[:SON_OF]->(l)",
-            "MATCH (r:Character {name: 'Rhaegar Targaryen'}), (j:Character {name: 'Jon Snow'}) MERGE (r)-[:FATHER_OF]->(j)"
+            "MATCH (r:Character {name: 'Rhaegar Targaryen'}), (j:Character {name: 'Jon Snow'}) MERGE (r)-[:FATHER_OF]->(j)",
+
+            # Lannister twins & father
+            "MERGE (c:Character {name: 'Tyland Lannister'}) SET c.house = 'Lannister', c.status = 'Hand of the King and Master of Coin'",
+            "MERGE (j:Character {name: 'Jason Lannister'}) SET j.house = 'Lannister', j.status = 'Lord of Casterly Rock'",
+            "MERGE (t:Character {name: 'Tymond Lannister'}) SET t.house = 'Lannister'",
+            "MATCH (t:Character {name: 'Tymond Lannister'}), (c:Character {name: 'Tyland Lannister'}) MERGE (t)-[:FATHER_OF]->(c)",
+            "MATCH (t:Character {name: 'Tymond Lannister'}), (j:Character {name: 'Jason Lannister'}) MERGE (t)-[:FATHER_OF]->(j)",
+            "MATCH (j:Character {name: 'Jason Lannister'}), (c:Character {name: 'Tyland Lannister'}) MERGE (j)-[:TWIN_BROTHER_OF]->(c)",
+            "MATCH (c:Character {name: 'Tyland Lannister'}), (j:Character {name: 'Jason Lannister'}) MERGE (c)-[:TWIN_BROTHER_OF]->(j)",
+
+            # Unwin Peake
+            "MERGE (u:Character {name: 'Unwin Peake'}) SET u.house = 'Peake', u.status = 'Hand of the King and Regent'",
+            "MERGE (tp:Character {name: 'Titus Peake'}) SET tp.house = 'Peake'",
+            "MATCH (tp:Character {name: 'Titus Peake'}), (u:Character {name: 'Unwin Peake'}) MERGE (tp)-[:FATHER_OF]->(u)",
+
+            # Luthor Largent & Davos Seaworth
+            "MERGE (lut:Character {name: 'Luthor Largent'}) SET lut.house = 'Gold Cloaks', lut.status = 'Commander of the City Watch'",
+            "MERGE (d:Character {name: 'Davos Seaworth'}) SET d.house = 'Seaworth', d.status = 'Smuggler, Knight, and Hand of the King'",
+
+            # Daemon Targaryen & his marriages
+            "MERGE (dae:Character {name: 'Daemon Targaryen'}) SET dae.house = 'Targaryen', dae.status = 'Rogue Prince'",
+            "MERGE (rhea:Character {name: 'Rhea Royce'}) SET rhea.house = 'Royce', rhea.status = 'Lady of Runestone'",
+            "MERGE (lae:Character {name: 'Laena Velaryon'}) SET lae.house = 'Velaryon'",
+            "MERGE (rhaenyra:Character {name: 'Rhaenyra Targaryen'}) SET rhaenyra.house = 'Targaryen', rhaenyra.status = 'Queen'",
+            "MATCH (dae:Character {name: 'Daemon Targaryen'}), (rhea:Character {name: 'Rhea Royce'}) MERGE (dae)-[:SPOUSE_OF]->(rhea)",
+            "MATCH (dae:Character {name: 'Daemon Targaryen'}), (lae:Character {name: 'Laena Velaryon'}) MERGE (dae)-[:SPOUSE_OF]->(lae)",
+            "MATCH (dae:Character {name: 'Daemon Targaryen'}), (rhaenyra:Character {name: 'Rhaenyra Targaryen'}) MERGE (dae)-[:SPOUSE_OF]->(rhaenyra)"
         ]
 
         logger.info("Seeding Neo4j instance with standard character lineages...")
