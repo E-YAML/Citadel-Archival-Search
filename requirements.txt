@@ -32,15 +32,12 @@ requests>=2.31.0
 pytest>=8.0.0
 pytest-asyncio>=0.23.0
 
+# Backend API Server dependencies (also required for running tests/test_api.py)
+fastapi>=0.100.0
+uvicorn>=0.20.0
+slowapi>=0.1.7
+
 # ─────────────────────────────────────────────────────────────────
-# NOTE: The following packages are intentionally EXCLUDED from this
-# file since the collapsed Streamlit-only architecture no longer
-# uses a separate FastAPI server:
-#   fastapi, uvicorn, slowapi
-#
-# They remain in backend/Dockerfile for the optional Render/Railway
-# deployment path (future plan).
-#
 # NOTE: ebooklib and beautifulsoup4 are used only for the one-time
 # local epub conversion (data/convert_epubs.py) and are NOT needed
 # on Streamlit Cloud. Install them locally with:
