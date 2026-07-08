@@ -1,0 +1,272 @@
+[
+  {
+    "id": "factual_001",
+    "question": "What is the Valyrian Steel sword of House Stark called?",
+    "ground_truth": "The Valyrian Steel sword of House Stark is called Ice. It is a greatsword that has been passed down through the Stark family for generations.",
+    "ground_truth_context": ["Ice", "Valyrian Steel", "House Stark", "greatsword"],
+    "category": "factual",
+    "requires_graph": false,
+    "expected_retrieval_keywords": ["Ice", "Stark", "Valyrian"]
+  },
+  {
+    "id": "factual_002",
+    "question": "What is the sigil and words of House Lannister?",
+    "ground_truth": "House Lannister's sigil is a golden lion on a crimson field. Their house words are 'Hear Me Roar', though they are more commonly associated with the phrase 'A Lannister always pays his debts'.",
+    "ground_truth_context": ["golden lion", "crimson", "Hear Me Roar", "Lannister always pays his debts"],
+    "category": "factual",
+    "requires_graph": false,
+    "expected_retrieval_keywords": ["Lannister", "lion", "sigil", "words"]
+  },
+  {
+    "id": "factual_003",
+    "question": "What are dragonglass and its significance in the fight against the White Walkers?",
+    "ground_truth": "Dragonglass is obsidian, a volcanic glass, and one of the few known materials capable of killing White Walkers (Others). It was used by the Children of the Forest and later by the Night's Watch.",
+    "ground_truth_context": ["dragonglass", "obsidian", "White Walkers", "Others", "Children of the Forest"],
+    "category": "factual",
+    "requires_graph": false,
+    "expected_retrieval_keywords": ["dragonglass", "obsidian", "White Walkers", "Others"]
+  },
+  {
+    "id": "factual_004",
+    "question": "What is the Wall and who built it?",
+    "ground_truth": "The Wall is a massive fortification of ice and ancient magic stretching across the northern border of the Seven Kingdoms. It is said to have been built by Brandon the Builder, also known as Bran the Builder, with the help of giants, to protect the realm from the White Walkers and other threats beyond.",
+    "ground_truth_context": ["Wall", "ice", "Brandon the Builder", "Bran the Builder", "giants", "White Walkers"],
+    "category": "factual",
+    "requires_graph": false,
+    "expected_retrieval_keywords": ["Wall", "built", "Brandon", "Bran the Builder"]
+  },
+  {
+    "id": "factual_005",
+    "question": "What is the Red Wedding?",
+    "ground_truth": "The Red Wedding refers to the massacre at the Twins during the War of the Five Kings, where Robb Stark, his mother Catelyn Tully, and most of his army were betrayed and slaughtered by Walder Frey and Roose Bolton, who had allied with House Lannister.",
+    "ground_truth_context": ["Red Wedding", "Twins", "Robb Stark", "Catelyn", "Walder Frey", "Roose Bolton", "massacre"],
+    "category": "factual",
+    "requires_graph": false,
+    "expected_retrieval_keywords": ["Red Wedding", "Twins", "Robb Stark", "Frey", "Bolton"]
+  },
+  {
+    "id": "lineage_001",
+    "question": "Who are the children of Tywin Lannister?",
+    "ground_truth": "Tywin Lannister has three children: Cersei Lannister (his daughter, who became queen), Jaime Lannister (his eldest son and a knight of the Kingsguard), and Tyrion Lannister (his youngest son, also known as the Imp).",
+    "ground_truth_context": ["Cersei", "Jaime", "Tyrion", "Tywin Lannister", "children"],
+    "category": "lineage",
+    "requires_graph": true,
+    "expected_retrieval_keywords": ["Tywin", "Cersei", "Jaime", "Tyrion", "Lannister"]
+  },
+  {
+    "id": "lineage_002",
+    "question": "Who are the parents of Daenerys Targaryen?",
+    "ground_truth": "Daenerys Targaryen is the daughter of King Aerys II Targaryen, also known as the Mad King, and his sister-wife Queen Rhaella Targaryen.",
+    "ground_truth_context": ["Aerys II", "Mad King", "Rhaella", "Daenerys", "parents"],
+    "category": "lineage",
+    "requires_graph": true,
+    "expected_retrieval_keywords": ["Daenerys", "Aerys", "Rhaella", "parents", "Targaryen"]
+  },
+  {
+    "id": "lineage_003",
+    "question": "Who are the siblings of Robb Stark?",
+    "ground_truth": "Robb Stark's siblings are Sansa Stark, Arya Stark, Bran Stark, and Rickon Stark. He also has a half-brother Jon Snow (though Jon's true parentage is later revealed to be Lyanna Stark and Rhaegar Targaryen).",
+    "ground_truth_context": ["Sansa", "Arya", "Bran", "Rickon", "Jon Snow", "Robb Stark", "siblings"],
+    "category": "lineage",
+    "requires_graph": true,
+    "expected_retrieval_keywords": ["Robb", "Sansa", "Arya", "Bran", "Rickon", "Jon Snow"]
+  },
+  {
+    "id": "lineage_004",
+    "question": "Who is the father of Joffrey Baratheon?",
+    "ground_truth": "Joffrey Baratheon is officially recorded as the son of King Robert Baratheon and Queen Cersei Lannister. However, his true biological father is Cersei's twin brother, Jaime Lannister.",
+    "ground_truth_context": ["Joffrey", "Robert Baratheon", "Cersei", "Jaime", "biological father"],
+    "category": "lineage",
+    "requires_graph": true,
+    "expected_retrieval_keywords": ["Joffrey", "father", "Robert", "Cersei", "Jaime"]
+  },
+  {
+    "id": "lineage_005",
+    "question": "Who is Stannis Baratheon's daughter?",
+    "ground_truth": "Stannis Baratheon's daughter is Shireen Baratheon. She is his only child and suffers from greyscale, a disfiguring disease that left part of her face and neck stony and dead.",
+    "ground_truth_context": ["Shireen Baratheon", "Stannis", "daughter", "greyscale"],
+    "category": "lineage",
+    "requires_graph": true,
+    "expected_retrieval_keywords": ["Stannis", "daughter", "Shireen", "greyscale"]
+  },
+  {
+    "id": "multi_hop_001",
+    "question": "Who is Jon Snow's maternal grandfather?",
+    "ground_truth": "Jon Snow's true mother is Lyanna Stark, and her father (Jon's maternal grandfather) is Rickard Stark, the Lord of Winterfell who was killed by the Mad King Aerys II.",
+    "ground_truth_context": ["Jon Snow", "Lyanna Stark", "Rickard Stark", "maternal grandfather", "Winterfell"],
+    "category": "multi_hop",
+    "requires_graph": true,
+    "expected_retrieval_keywords": ["Jon Snow", "Lyanna", "Rickard Stark", "grandfather"]
+  },
+  {
+    "id": "multi_hop_002",
+    "question": "What house does Sansa Stark's husband Tyrion belong to?",
+    "ground_truth": "Tyrion Lannister, who was forced to marry Sansa Stark, belongs to House Lannister of Casterly Rock.",
+    "ground_truth_context": ["Tyrion", "Lannister", "Sansa Stark", "married", "Casterly Rock"],
+    "category": "multi_hop",
+    "requires_graph": true,
+    "expected_retrieval_keywords": ["Tyrion", "Sansa", "Lannister", "house", "married"]
+  },
+  {
+    "id": "multi_hop_003",
+    "question": "Which king did the Mad King Aerys succeed on the Iron Throne?",
+    "ground_truth": "Aerys II Targaryen (the Mad King) succeeded his father Jaehaerys II Targaryen on the Iron Throne.",
+    "ground_truth_context": ["Aerys II", "Mad King", "Jaehaerys II", "Iron Throne", "succeeded"],
+    "category": "multi_hop",
+    "requires_graph": false,
+    "expected_retrieval_keywords": ["Aerys", "Jaehaerys", "Iron Throne", "succeeded"]
+  },
+  {
+    "id": "multi_hop_004",
+    "question": "Where was Jon Snow born according to his true parentage?",
+    "ground_truth": "Jon Snow was born in the Tower of Joy in Dorne. His true parents are Lyanna Stark and Rhaegar Targaryen, and Lyanna died there shortly after giving birth to him.",
+    "ground_truth_context": ["Tower of Joy", "Dorne", "Lyanna Stark", "Rhaegar Targaryen", "Jon Snow", "born"],
+    "category": "multi_hop",
+    "requires_graph": false,
+    "expected_retrieval_keywords": ["Tower of Joy", "Dorne", "Jon Snow", "Lyanna", "Rhaegar"]
+  },
+  {
+    "id": "multi_hop_005",
+    "question": "Who is the Lord Commander of the Night's Watch when Jon Snow joins?",
+    "ground_truth": "Jeor Mormont, known as the Old Bear, is the Lord Commander of the Night's Watch when Jon Snow arrives at Castle Black and joins the Watch.",
+    "ground_truth_context": ["Jeor Mormont", "Old Bear", "Lord Commander", "Night's Watch", "Jon Snow", "Castle Black"],
+    "category": "multi_hop",
+    "requires_graph": false,
+    "expected_retrieval_keywords": ["Mormont", "Lord Commander", "Night's Watch", "Jon Snow"]
+  },
+  {
+    "id": "negation_001",
+    "question": "Did Daenerys Targaryen ever visit the Citadel?",
+    "ground_truth": "No. Based on the source texts, Daenerys Targaryen never visited the Citadel. The Citadel is located in Oldtown and is the seat of the Maesters. Daenerys's journey in the books does not bring her to Oldtown or the Citadel.",
+    "ground_truth_context": ["Daenerys", "Citadel", "Oldtown", "never visited"],
+    "category": "negation",
+    "requires_graph": false,
+    "expected_retrieval_keywords": ["Daenerys", "Citadel", "Oldtown"]
+  },
+  {
+    "id": "negation_002",
+    "question": "Did Tyrion Lannister ever ride a dragon?",
+    "ground_truth": "Based on the published books (A Song of Ice and Fire through A Dance with Dragons), Tyrion Lannister has not ridden a dragon. He encounters dragons but does not ride one in the source material.",
+    "ground_truth_context": ["Tyrion", "dragon", "ride", "not ridden"],
+    "category": "negation",
+    "requires_graph": false,
+    "expected_retrieval_keywords": ["Tyrion", "dragon", "ride"]
+  },
+  {
+    "id": "negation_003",
+    "question": "Is Jon Snow a member of House Lannister?",
+    "ground_truth": "No. Jon Snow was raised as the bastard son of Eddard Stark and is associated with House Stark. His true parentage is Lyanna Stark and Rhaegar Targaryen, making him a Targaryen by blood — not a Lannister.",
+    "ground_truth_context": ["Jon Snow", "Stark", "not Lannister", "bastard", "Targaryen"],
+    "category": "negation",
+    "requires_graph": true,
+    "expected_retrieval_keywords": ["Jon Snow", "Stark", "Lannister", "house"]
+  },
+  {
+    "id": "negation_004",
+    "question": "Did Ned Stark survive the War of the Five Kings?",
+    "ground_truth": "No. Eddard (Ned) Stark was executed at the Great Sept of Baelor in King's Landing before the War of the Five Kings fully began. He was beheaded on the orders of King Joffrey.",
+    "ground_truth_context": ["Ned Stark", "executed", "Great Sept of Baelor", "Joffrey", "beheaded"],
+    "category": "negation",
+    "requires_graph": false,
+    "expected_retrieval_keywords": ["Ned Stark", "executed", "Baelor", "Joffrey", "beheaded"]
+  },
+  {
+    "id": "negation_005",
+    "question": "Does House Stark have a dragon?",
+    "ground_truth": "No. House Stark does not have a dragon. Dragons are historically associated with House Targaryen. The Starks have direwolves as their ancestral animal symbol, not dragons.",
+    "ground_truth_context": ["House Stark", "no dragon", "direwolf", "Targaryen", "dragons"],
+    "category": "negation",
+    "requires_graph": false,
+    "expected_retrieval_keywords": ["Stark", "dragon", "direwolf"]
+  },
+  {
+    "id": "hybrid_001",
+    "question": "What did Ned Stark discover about the parentage of Joffrey and what did it cost him?",
+    "ground_truth": "Ned Stark discovered that Joffrey, Myrcella, and Tommen Baratheon were not the true children of King Robert, but were instead the offspring of Cersei and her twin brother Jaime Lannister. Ned confronted Cersei with this knowledge and intended to expose the truth, but was betrayed by Petyr Baelish (Littlefinger) and ultimately arrested and executed for treason.",
+    "ground_truth_context": ["Ned Stark", "Joffrey", "Cersei", "Jaime", "incest", "Littlefinger", "betrayal", "executed", "treason"],
+    "category": "hybrid",
+    "requires_graph": true,
+    "expected_retrieval_keywords": ["Ned Stark", "Joffrey", "parentage", "Cersei", "Jaime", "Littlefinger"]
+  },
+  {
+    "id": "hybrid_002",
+    "question": "How did Robb Stark come to be called the Young Wolf and what battles gave him this reputation?",
+    "ground_truth": "Robb Stark earned the title 'Young Wolf' through his military victories early in the War of the Five Kings. He defeated and captured Jaime Lannister at the Battle of the Whispering Wood and won the Battle of the Camps, establishing himself as a military commander of great talent despite his youth.",
+    "ground_truth_context": ["Robb Stark", "Young Wolf", "Battle of the Whispering Wood", "Jaime Lannister", "captured", "Battle of the Camps"],
+    "category": "hybrid",
+    "requires_graph": true,
+    "expected_retrieval_keywords": ["Robb Stark", "Young Wolf", "Whispering Wood", "Jaime", "captured"]
+  },
+  {
+    "id": "hybrid_003",
+    "question": "What is Daenerys Targaryen's relationship to the dragons Drogon, Rhaegal, and Viserion?",
+    "ground_truth": "Daenerys Targaryen hatched the three dragons from petrified eggs in a funeral pyre. She named them Drogon (after her late husband Khal Drogo), Rhaegal (after her brother Rhaegar), and Viserion (after her brother Viserys). She is considered their mother and they are bound to her.",
+    "ground_truth_context": ["Daenerys", "Drogon", "Rhaegal", "Viserion", "hatched", "funeral pyre", "Drogo", "Rhaegar", "Viserys", "named after"],
+    "category": "hybrid",
+    "requires_graph": true,
+    "expected_retrieval_keywords": ["Daenerys", "Drogon", "Rhaegal", "Viserion", "hatched", "pyre"]
+  },
+  {
+    "id": "hybrid_004",
+    "question": "What was the role of Petyr Baelish (Littlefinger) in the downfall of Ned Stark?",
+    "ground_truth": "Petyr Baelish (Littlefinger), the Master of Coin, betrayed Ned Stark at a critical moment. When Ned confronted Queen Cersei and tried to rally the City Watch (Gold Cloaks) to his side, Littlefinger had bribed the Gold Cloaks to betray Ned instead. This led to Ned's arrest and eventual execution.",
+    "ground_truth_context": ["Littlefinger", "Petyr Baelish", "Ned Stark", "City Watch", "Gold Cloaks", "betrayal", "bribed"],
+    "category": "hybrid",
+    "requires_graph": true,
+    "expected_retrieval_keywords": ["Littlefinger", "Baelish", "Ned Stark", "Gold Cloaks", "betrayal"]
+  },
+  {
+    "id": "hybrid_005",
+    "question": "What happened at Hardhome and why was it significant to the Night's Watch?",
+    "ground_truth": "Hardhome was a wildling settlement beyond the Wall where Jon Snow led a ranging to evacuate the Free Folk. The settlement was attacked by the Army of the Dead led by the Night King. Thousands of wildlings were killed and raised as wights, demonstrating the terrifying power of the White Walkers and their ability to raise the dead en masse.",
+    "ground_truth_context": ["Hardhome", "Jon Snow", "wildlings", "Free Folk", "Army of the Dead", "Night King", "wights", "White Walkers"],
+    "category": "hybrid",
+    "requires_graph": false,
+    "expected_retrieval_keywords": ["Hardhome", "Jon Snow", "wildlings", "White Walkers", "wights"]
+  },
+  {
+    "id": "adversarial_001",
+    "question": "What color was Rhaenyra Targaryen's dragon Drogon?",
+    "ground_truth": "Rhaenyra Targaryen did not ride a dragon called Drogon. Drogon is one of Daenerys Targaryen's dragons, named after her late husband Khal Drogo. Rhaenyra's dragon was named Syrax. This question contains a factual error by attributing Drogon to Rhaenyra.",
+    "ground_truth_context": ["Rhaenyra", "Syrax", "Drogon", "Daenerys", "incorrect attribution"],
+    "category": "adversarial",
+    "requires_graph": false,
+    "expected_retrieval_keywords": ["Rhaenyra", "Syrax", "dragon", "Drogon", "Daenerys"]
+  },
+  {
+    "id": "adversarial_002",
+    "question": "How many times did Ned Stark visit Essos?",
+    "ground_truth": "Based on the source texts, there is no record of Eddard (Ned) Stark visiting Essos. Ned was Lord of Winterfell in the North of Westeros and his travels were within Westeros. This question contains a false premise.",
+    "ground_truth_context": ["Ned Stark", "Essos", "no record", "Westeros", "Winterfell"],
+    "category": "adversarial",
+    "requires_graph": false,
+    "expected_retrieval_keywords": ["Ned Stark", "Essos", "Westeros"]
+  },
+  {
+    "id": "adversarial_003",
+    "question": "Tell me about Arya Stark's direwolf Ghost.",
+    "ground_truth": "Arya Stark's direwolf is named Nymeria, not Ghost. Ghost is Jon Snow's direwolf, a large white direwolf with red eyes. Arya was forced to chase Nymeria away to protect her from being killed after an incident with Prince Joffrey. This question contains a factual error.",
+    "ground_truth_context": ["Arya Stark", "Nymeria", "Ghost", "Jon Snow", "direwolf", "incorrect name"],
+    "category": "adversarial",
+    "requires_graph": false,
+    "expected_retrieval_keywords": ["Arya", "Nymeria", "Ghost", "Jon Snow", "direwolf"]
+  },
+  {
+    "id": "adversarial_004",
+    "question": "What is the name of the Valyrian steel sword that Sansa Stark uses in battle?",
+    "ground_truth": "Sansa Stark does not use a Valyrian steel sword in battle in the source texts. She is not depicted as a warrior. This question contains a false premise. Notable Valyrian steel swords in the story include Ice (House Stark's sword, later reforged), Longclaw (Jon Snow's), and Heartsbane (Sam Tarly's).",
+    "ground_truth_context": ["Sansa Stark", "no Valyrian sword", "Ice", "Longclaw", "Heartsbane", "false premise"],
+    "category": "adversarial",
+    "requires_graph": false,
+    "expected_retrieval_keywords": ["Sansa", "Valyrian", "sword", "Ice", "Longclaw"]
+  },
+  {
+    "id": "adversarial_005",
+    "question": "Which Targaryen king rode Balerion the Black Dread during the Blackfyre Rebellion?",
+    "ground_truth": "Balerion the Black Dread died long before the Blackfyre Rebellion. Balerion was last ridden by King Viserys I Targaryen before dying of old age. The Blackfyre Rebellion occurred roughly a generation later. This question contains a false historical premise by linking Balerion to the Blackfyre Rebellion.",
+    "ground_truth_context": ["Balerion", "Black Dread", "Blackfyre Rebellion", "Viserys I", "died of old age", "false premise"],
+    "category": "adversarial",
+    "requires_graph": false,
+    "expected_retrieval_keywords": ["Balerion", "Black Dread", "Blackfyre Rebellion", "Targaryen"]
+  }
+]

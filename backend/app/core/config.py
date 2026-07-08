@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     # LangChain / LangSmith Tracing Config
     LANGCHAIN_TRACING_V2: bool = False
     LANGCHAIN_API_KEY: Optional[str] = None
+    LANGSMITH_PROJECT: str = "citadel-archival-search-evals"
 
     # Production Architecture Configuration
     # Default None → workflow.py resolves to tempfile.gettempdir() at runtime

@@ -32,6 +32,17 @@ requests>=2.31.0
 pytest>=8.0.0
 pytest-asyncio>=0.23.0
 
+# Evals (offline evaluation suite — not needed on Streamlit Cloud)
+# NOTE: ragas must be installed with --no-deps on Python 3.14+ because its
+# optional dependency scikit-network has no pre-built wheel yet and requires
+# a C++ compiler to build from source.
+# Install steps:
+#   pip install ragas --no-deps
+#   pip install appdirs datasets diskcache instructor langchain-community langchain_openai nest-asyncio networkx numpy openai pillow rich tiktoken tqdm typer
+langsmith>=0.1.0
+datasets>=2.20.0
+python-dotenv>=1.0.0
+
 # Backend API Server dependencies (also required for running tests/test_api.py)
 fastapi>=0.100.0
 uvicorn>=0.20.0
