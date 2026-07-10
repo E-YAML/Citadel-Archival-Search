@@ -21,6 +21,12 @@ class Settings(BaseSettings):
     # API Keys & Third-party integrations
     GROQ_API_KEY: str
 
+    # Fallback LLM providers (optional — enables automatic rate-limit failover)
+    # Sign up free at https://cloud.cerebras.ai
+    CEREBRAS_API_KEY: Optional[str] = None
+    # Sign up free at https://api.together.xyz
+    TOGETHER_API_KEY: Optional[str] = None
+
     # Qdrant Config
     QDRANT_URL: str
     QDRANT_API_KEY: str

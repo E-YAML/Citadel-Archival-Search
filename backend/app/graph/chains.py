@@ -1,12 +1,18 @@
 from pydantic import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from langchain_groq import ChatGroq
 
-from app.core.config import settings
+from app.core.llm_fallback import build_llm_with_fallback
 
+# --- LLM Configurations ---
+# Both llm_grade and llm_generate are now backed by a multi-provider fallback
+# chain: Groq → Cerebras → Together AI.  When Groq hits a rate limit (429) the
+# next available provider takes over automatically, with no change to the chains
+# or graph nodes below.  Add CEREBRAS_API_KEY / TOGETHER_API_KEY to .env to
+# activate the respective fallback providers.
+llm_grade = build_llm_with_fallback(temperature=0.0)
+llm_generate = build_llm_with_fallback(temperature=0.0)
 
-# --- Pydantic Models for Structured Outputs ---
 
 class GradeDocuments(BaseModel):
     """
@@ -34,25 +40,6 @@ class GradeAnswer(BaseModel):
         description="True if the generated answer directly addresses and resolves the user's question, False otherwise."
     )
 
-
-# --- LLM Configurations ---
-
-# Standard model for quick evaluation tasks
-# NOTE: llama-3.1-8b-instant has only 6K TPM on Groq free tier, which causes
-# 429 errors when grading 4 documents concurrently. Using the 70b model here
-# shares its higher TPM budget with the generate/rewrite nodes.
-llm_grade = ChatGroq(
-    api_key=settings.GROQ_API_KEY,
-    model="llama-3.3-70b-versatile",
-    temperature=0.0
-)
-
-# Advanced model for response generation tasks
-llm_generate = ChatGroq(
-    api_key=settings.GROQ_API_KEY,
-    model="llama-3.3-70b-versatile",
-    temperature=0.0
-)
 
 
 # --- Chain Formulations ---
