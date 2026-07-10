@@ -58,42 +58,65 @@ from langchain_core.documents import Document  # noqa: E402
 
 def _build_ragas_llm():
     """
-    Build a ragas 0.4-compatible LangchainLLMWrapper around the project's Groq LLM.
-    ragas 0.4 requires wrapping langchain models with LangchainLLMWrapper.
+    Build a ragas 0.4 InstructorLLM using llm_factory pointed at Groq's
+    OpenAI-compatible endpoint.
+
+    Must use AsyncOpenAI (not OpenAI) so that the instructor-backed LLM
+    can serve agenerate() calls made by the collections metrics' ascore() methods.
     """
-    from langchain_groq import ChatGroq  # noqa: PLC0415
-    from ragas.llms.base import LangchainLLMWrapper  # noqa: PLC0415
+    from openai import AsyncOpenAI  # noqa: PLC0415
+    from ragas.llms import llm_factory  # noqa: PLC0415
     import os
 
     api_key = os.environ.get("GROQ_API_KEY", "")
-    groq_llm = ChatGroq(
+    # AsyncOpenAI pointed at Groq's OpenAI-compatible endpoint
+    groq_client = AsyncOpenAI(
+        base_url="https://api.groq.com/openai/v1",
         api_key=api_key,
-        model="llama-3.3-70b-versatile",
-        temperature=0.0,
     )
-    return LangchainLLMWrapper(groq_llm)
+    return llm_factory("llama-3.3-70b-versatile", client=groq_client)
 
 
 def _build_ragas_embeddings():
     """
-    Build a ragas 0.4-compatible LangchainEmbeddingsWrapper using fastembed.
-    ragas 0.4 requires wrapping langchain embeddings with LangchainEmbeddingsWrapper.
+    Build a ragas 0.4-native embeddings object by subclassing BaseRagasEmbedding
+    (singular — the ABC that collections metrics validate against) and backing
+    it with the already-installed fastembed model.
     """
-    from ragas.embeddings.base import LangchainEmbeddingsWrapper  # noqa: PLC0415
-    from langchain_core.embeddings import Embeddings  # noqa: PLC0415
     from fastembed import TextEmbedding  # noqa: PLC0415
+    from ragas.embeddings.base import BaseRagasEmbedding  # noqa: PLC0415
 
-    class _FastEmbedWrapper(Embeddings):
+    class _FastEmbedRagasEmbedding(BaseRagasEmbedding):
+        """fastembed-backed BaseRagasEmbedding for ragas 0.4 collections metrics."""
+
         def __init__(self):
             self._model = TextEmbedding(model_name="BAAI/bge-small-en-v1.5")
 
-        def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        def _embed_batch(self, texts: list[str]) -> list[list[float]]:
             return [list(v) for v in self._model.embed(texts)]
 
-        def embed_query(self, text: str) -> list[float]:
-            return list(list(self._model.embed([text]))[0])
+        # ── Required sync interface (BaseRagasEmbedding ABC) ──────────────
+        def embed_text(self, text: str, **kwargs) -> list[float]:
+            return self._embed_batch([text])[0]
 
-    return LangchainEmbeddingsWrapper(_FastEmbedWrapper())
+        def embed_texts(self, texts: list[str], **kwargs) -> list[list[float]]:
+            return self._embed_batch(texts)
+
+        # ── Required async interface ───────────────────────────────────────
+        async def aembed_text(self, text: str, **kwargs) -> list[float]:
+            import asyncio  # noqa: PLC0415
+            loop = asyncio.get_event_loop()
+            return await loop.run_in_executor(None, lambda: self._embed_batch([text])[0])
+
+        async def aembed_texts(
+            self, texts: list[str], **kwargs
+        ) -> list[list[float]]:
+            import asyncio  # noqa: PLC0415
+            loop = asyncio.get_event_loop()
+            return await loop.run_in_executor(None, self._embed_batch, texts)
+
+    return _FastEmbedRagasEmbedding()
+
 
 
 # ---------------------------------------------------------------------------
@@ -203,22 +226,22 @@ async def _evaluate_example(
 # RAGAS evaluation
 # ---------------------------------------------------------------------------
 
-def _run_ragas_evaluation(rows: list[dict[str, Any]]) -> tuple[Any, dict[str, float]]:
+async def _run_ragas_evaluation(rows: list[dict[str, Any]]) -> tuple[list[dict], dict[str, float]]:
     """
-    Run RAGAS 0.4 evaluation on the collected rows.
+    Run RAGAS 0.4 evaluation using direct per-sample ascore() calls.
 
-    Uses the ragas 0.4 API:
-      - SingleTurnSample for each row
-      - EvaluationDataset wrapping the samples
-      - LangchainLLMWrapper / LangchainEmbeddingsWrapper for the critic models
-      - Class-based metrics (Faithfulness, AnswerRelevancy, etc.) with llm injected
-      - llm + embeddings passed to evaluate() directly
+    In ragas 0.4, the new collections metrics (Faithfulness, AnswerRelevancy,
+    ContextPrecision, ContextRecall) inherit from BaseMetric/SimpleBaseMetric,
+    NOT from the legacy Metric class. The ragas evaluate() function only accepts
+    instances of the legacy Metric class and rejects collections metrics.
+
+    The correct API for collections metrics is to call metric.ascore(**kwargs)
+    directly for each sample with the specific kwargs each metric requires.
 
     Returns:
-        (ragas_result_object, aggregated_scores_dict)
+        (per_row_results_list, aggregated_scores_dict)
     """
-    from ragas import evaluate, EvaluationDataset  # noqa: PLC0415
-    from ragas.dataset_schema import SingleTurnSample  # noqa: PLC0415
+    import asyncio  # noqa: PLC0415
     from ragas.metrics.collections import (  # noqa: PLC0415
         Faithfulness,
         AnswerRelevancy,
@@ -229,54 +252,78 @@ def _run_ragas_evaluation(rows: list[dict[str, Any]]) -> tuple[Any, dict[str, fl
     ragas_llm = _build_ragas_llm()
     ragas_embeddings = _build_ragas_embeddings()
 
-    # Build SingleTurnSample objects (ragas 0.4 schema)
-    samples = [
-        SingleTurnSample(
-            user_input=r["user_input"],
-            response=r["response"],
-            retrieved_contexts=r["retrieved_contexts"],
-            reference=r["reference"],
-        )
-        for r in rows
-    ]
-    dataset = EvaluationDataset(samples=samples)
+    faith_metric = Faithfulness(llm=ragas_llm)
+    ar_metric    = AnswerRelevancy(llm=ragas_llm, embeddings=ragas_embeddings)
+    cp_metric    = ContextPrecision(llm=ragas_llm)
+    cr_metric    = ContextRecall(llm=ragas_llm)
 
-    # Instantiate class-based metrics with the wrapped LLM
-    metrics = [
-        Faithfulness(llm=ragas_llm),
-        AnswerRelevancy(llm=ragas_llm, embeddings=ragas_embeddings),
-        ContextPrecision(llm=ragas_llm),
-        ContextRecall(llm=ragas_llm),
-    ]
+    print("\n[RAGAS] Scoring each example with 4 metrics (this may take a few minutes)...")
 
-    print("\n[RAGAS] Running evaluation (this may take a few minutes)...")
-    result = evaluate(
-        dataset=dataset,
-        metrics=metrics,
-        llm=ragas_llm,
-        embeddings=ragas_embeddings,
-        raise_exceptions=False,
-    )
+    per_row: list[dict] = []
+    all_scores: dict[str, list[float]] = {
+        "faithfulness": [],
+        "answer_relevancy": [],
+        "context_precision": [],
+        "context_recall": [],
+    }
 
-    # Extract aggregate scores
+    for i, r in enumerate(rows, 1):
+        q   = r["user_input"]
+        ans = r["response"]
+        ctx = r["retrieved_contexts"]
+        ref = r["reference"]
+        print(f"  [{i}/{len(rows)}] Scoring: {q[:60]}...")
+
+        row_scores: dict[str, float | None] = {}
+        try:
+            result = await faith_metric.ascore(
+                user_input=q, response=ans, retrieved_contexts=ctx
+            )
+            row_scores["faithfulness"] = float(result.value) if result.value is not None else None
+        except Exception as exc:
+            print(f"    [WARN] faithfulness failed: {exc}")
+            row_scores["faithfulness"] = None
+
+        try:
+            result = await ar_metric.ascore(user_input=q, response=ans)
+            row_scores["answer_relevancy"] = float(result.value) if result.value is not None else None
+        except Exception as exc:
+            print(f"    [WARN] answer_relevancy failed: {exc}")
+            row_scores["answer_relevancy"] = None
+
+        try:
+            result = await cp_metric.ascore(
+                user_input=q, reference=ref, retrieved_contexts=ctx
+            )
+            row_scores["context_precision"] = float(result.value) if result.value is not None else None
+        except Exception as exc:
+            print(f"    [WARN] context_precision failed: {exc}")
+            row_scores["context_precision"] = None
+
+        try:
+            result = await cr_metric.ascore(
+                user_input=q, retrieved_contexts=ctx, reference=ref
+            )
+            row_scores["context_recall"] = float(result.value) if result.value is not None else None
+        except Exception as exc:
+            print(f"    [WARN] context_recall failed: {exc}")
+            row_scores["context_recall"] = None
+
+        per_row.append({**r, "ragas_scores": row_scores})
+
+        for key, val in row_scores.items():
+            if val is not None:
+                all_scores[key].append(val)
+
+    # Aggregate
     scores: dict[str, float] = {}
-    try:
-        result_df = result.to_pandas()
-        metric_col_map = {
-            "faithfulness": "faithfulness",
-            "answer_relevancy": "answer_relevancy",
-            "context_precision": "context_precision",
-            "context_recall": "context_recall",
-        }
-        for key, col in metric_col_map.items():
-            if col in result_df.columns:
-                mean_val = result_df[col].dropna().mean()
-                if mean_val == mean_val:  # not NaN
-                    scores[key] = round(float(mean_val), 4)
-    except Exception as exc:
-        print(f"[WARN] Could not extract scores from result dataframe: {exc}")
+    for key, vals in all_scores.items():
+        if vals:
+            scores[key] = round(sum(vals) / len(vals), 4)
 
-    return result, scores
+    print("\n[RAGAS] Scoring complete.")
+    return per_row, scores
+
 
 
 # ---------------------------------------------------------------------------
@@ -472,7 +519,7 @@ async def main(args: argparse.Namespace):
     # 4. Run RAGAS scoring
     ragas_scores: dict[str, float] = {}
     if not args.no_ragas:
-        _, ragas_scores = _run_ragas_evaluation(rows)
+        rows, ragas_scores = await _run_ragas_evaluation(rows)
     else:
         print("[RAGAS] Skipped (--no-ragas flag set).")
 

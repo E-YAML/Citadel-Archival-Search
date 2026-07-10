@@ -156,7 +156,7 @@ def push_dataset(
         print(f"  Created dataset ID: {dataset_id}")
         print(f"  Pushed {len(inputs)} examples.")
 
-    print(f"\n  ✅ Dataset ready: https://smith.langchain.com/datasets/{dataset_id}")
+    print(f"\n  [OK] Dataset ready: https://smith.langchain.com/datasets/{dataset_id}")
     return dataset_id
 
 
@@ -199,8 +199,23 @@ def build_target_fn():
             "search_retry_count": retry_count,
         }
 
+    import time as _time  # noqa: PLC0415
+    _example_count = [0]
+
     def target(inputs: dict[str, Any]) -> dict[str, Any]:
-        """Sync wrapper for the async graph invocation."""
+        """Sync wrapper for the async graph invocation.
+
+        A 30-second cooldown is inserted between examples to stay within
+        Groq's free-tier TPM (tokens-per-minute) rate limit. The Self-RAG
+        graph issues ~8-12 Groq API calls per question (doc graders, rewrite,
+        generate, hallucination check), so back-to-back examples quickly
+        saturate the per-minute quota.
+        """
+        if _example_count[0] > 0:
+            print(f"  [cooldown] Waiting 30s before example {_example_count[0] + 1} "
+                  "to respect Groq TPM limits...")
+            _time.sleep(30)
+        _example_count[0] += 1
         return asyncio.run(_async_target(inputs))
 
     return target
@@ -237,7 +252,7 @@ def build_evaluators():
          "  0.7 = Mostly correct, minor omissions\n"
          "  0.4 = Partially correct, key facts missing or wrong\n"
          "  0.0 = Incorrect or completely off-topic\n"
-         "Output ONLY a JSON object: {\"score\": <float>, \"reason\": \"<one sentence>\"}"),
+         "Output ONLY a JSON object: {{\"score\": <float>, \"reason\": \"<one sentence>\"}}"),
         ("human",
          "Reference Answer:\n{reference}\n\nAI Answer:\n{answer}")
     ])
@@ -274,7 +289,7 @@ def build_evaluators():
          "  - It makes specific factual claims without any source citation\n"
          "  - It fabricates plot details not in the ASOIAF books\n"
          "Score: 1.0 = Faithful | 0.5 = Partially faithful | 0.0 = Unfaithful\n"
-         "Output ONLY JSON: {\"score\": <float>, \"reason\": \"<one sentence>\"}"),
+         "Output ONLY JSON: {{\"score\": <float>, \"reason\": \"<one sentence>\"}}"),
         ("human",
          "AI Answer:\n{answer}")
     ])
@@ -308,7 +323,7 @@ def build_evaluators():
          "  - Identify and correct the false premise, OR\n"
          "  - Decline to answer based on the false premise\n"
          "Score: 1.0 = Correctly identified false premise | 0.0 = Accepted false premise as true\n"
-         "Output ONLY JSON: {\"score\": <float>, \"reason\": \"<one sentence>\"}"),
+         "Output ONLY JSON: {{\"score\": <float>, \"reason\": \"<one sentence>\"}}"),
         ("human",
          "Question (contains false premise):\n{question}\n\nAI Answer:\n{answer}")
     ])
@@ -390,6 +405,9 @@ def run_experiment(
         "evaluators": evaluators,
         "experiment_prefix": experiment_name,
         "client": client,
+        # Force strictly sequential execution so the 30s cooldown in target()
+        # is effective and we never run two graph invocations concurrently.
+        "max_concurrency": 1,
         "metadata": {
             "project": ctx.get_langsmith_project(),
             "categories_filter": categories or "all",
@@ -397,9 +415,6 @@ def run_experiment(
     }
     if sample:
         kwargs["num_repetitions"] = 1
-        # LangSmith doesn't natively support "first N" via SDK — we limit dataset size
-        # by passing max_concurrency and relying on the dataset ordering
-        kwargs["max_concurrency"] = 1
 
     print("  Starting experiment (each example runs the full Self-RAG graph)...")
     print("  This will take several minutes depending on Groq API rate limits.\n")

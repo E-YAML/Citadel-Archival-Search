@@ -38,9 +38,12 @@ class GradeAnswer(BaseModel):
 # --- LLM Configurations ---
 
 # Standard model for quick evaluation tasks
+# NOTE: llama-3.1-8b-instant has only 6K TPM on Groq free tier, which causes
+# 429 errors when grading 4 documents concurrently. Using the 70b model here
+# shares its higher TPM budget with the generate/rewrite nodes.
 llm_grade = ChatGroq(
     api_key=settings.GROQ_API_KEY,
-    model="llama-3.1-8b-instant",
+    model="llama-3.3-70b-versatile",
     temperature=0.0
 )
 

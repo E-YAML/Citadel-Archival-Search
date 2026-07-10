@@ -1,0 +1,90 @@
+{
+  "run_metadata": {
+    "timestamp": "20260708T103721Z",
+    "tag": "v1_sample",
+    "total_examples": 5,
+    "sample_size": 5,
+    "categories_filter": [
+      "factual"
+    ],
+    "skip_graph": true
+  },
+  "aggregate_scores": {},
+  "per_example": [
+    {
+      "id": "factual_001",
+      "category": "factual",
+      "requires_graph": false,
+      "question": "What is the Valyrian Steel sword of House Stark called?",
+      "answer": "### Answer\nThe Valyrian Steel sword of House Stark is called **Ice** [^1].\n\n### Citation\n[^1]: 'Fire and Blood' (Chapter: AFTERMATH)",
+      "ground_truth": "The Valyrian Steel sword of House Stark is called Ice. It is a greatsword that has been passed down through the Stark family for generations.",
+      "context_count": 4,
+      "contexts_preview": [
+        "[A Dance With Dragons / HOUSESTARK]\nHOUSE STARK The Starks trace their descent from Brandon the Builder and the Kings of Winter. For thousands of years, they ruled from Winterfell as Kings in the Nort",
+        "[Fire and Blood -- George R_R_ Martin -- 2020 -- HarperCollins Publishers -- 52ef8cfbc6f3a17c8b02599ea828198e -- Anna’s Archive / AFTERMATH]\nAs Septon Eustace led the doomed men in prayer, beseeching ",
+        "[Fire and Blood -- George R_R_ Martin -- 2020 -- HarperCollins Publishers -- 52ef8cfbc6f3a17c8b02599ea828198e -- Anna’s Archive / THE SONS OF THE DRAGON]\n(This bequest would prove to be most unwise, a",
+        "[A Storm of Swords / JAIME]\nBrienne's homely face twisted in fury. \"If you believe that I would harm my lady's daughter for a sword , you--\"\n\n\" Just listen ,\" he snapped, angered by her assumption. \"I"
+      ]
+    },
+    {
+      "id": "factual_002",
+      "category": "factual",
+      "requires_graph": false,
+      "question": "What is the sigil and words of House Lannister?",
+      "answer": "Citadel records indicate an error occurred while processing the response.",
+      "ground_truth": "House Lannister's sigil is a golden lion on a crimson field. Their house words are 'Hear Me Roar', though they are more commonly associated with the phrase 'A Lannister always pays his debts'.",
+      "context_count": 4,
+      "contexts_preview": [
+        "[A Dance With Dragons / HOUSELANNISTER]\nHOUSE LANNISTER The Lannisters of Casterly Rock remain the principal support of King Tommen's claim to the Iron Throne. They boast of descent from Lann the Clev",
+        "[A Dance With Dragons / HOUSELANNISTER]\nThe Lannisters of Casterly Rock remain the principal support of King Tommen's claim to the Iron Throne. They boast of descent from Lann the Clever, the legendar",
+        "[A Dance With Dragons / HOUSETYRELL]\nLord of Bitterbridge, --his knights and sworn swords: -- SER JON FOSSOWAY , of the green-apple Fossoways, -- SER TANTON FOSSOWAY , of the red-apple Fossoways. The ",
+        "[A Dance With Dragons / HOUSETULLY]\nHOUSE TULLY Lord Edmyn Tully of Riverrun was one of the first of the river lords to swear fealty to Aegon the Conqueror. King Aegon rewarded him by raising House Tu"
+      ]
+    },
+    {
+      "id": "factual_003",
+      "category": "factual",
+      "requires_graph": false,
+      "question": "What are dragonglass and its significance in the fight against the White Walkers?",
+      "answer": "Citadel records indicate an error occurred while processing the response.",
+      "ground_truth": "Dragonglass is obsidian, a volcanic glass, and one of the few known materials capable of killing White Walkers (Others). It was used by the Children of the Forest and later by the Night's Watch.",
+      "context_count": 4,
+      "contexts_preview": [
+        "[Fire and Blood -- George R_R_ Martin -- 2020 -- HarperCollins Publishers -- 52ef8cfbc6f3a17c8b02599ea828198e -- Anna’s Archive / THE DYING OF THE DRAGONS]\nWho can know the heart of a dragon? Was it s",
+        "[Fire and Blood -- George R_R_ Martin -- 2020 -- HarperCollins Publishers -- 52ef8cfbc6f3a17c8b02599ea828198e -- Anna’s Archive / THE DYING OF THE DRAGONS]\nDaeron Targaryen was in his tent asleep when",
+        "[Fire and Blood -- George R_R_ Martin -- 2020 -- HarperCollins Publishers -- 52ef8cfbc6f3a17c8b02599ea828198e -- Anna’s Archive / THE YEAR OF THE THREE BRIDES—49 AC]\n1 Or so the confrontation at the g",
+        "[A Storm of Swords / SAMWELL]\nSam stumbled. \"Jon found more, on the Fist. Hundreds of arrowheads, spearheads as well . . .\"\n\n\"So you said. Small good it does us there. To reach the Fist again we'd nee"
+      ]
+    },
+    {
+      "id": "factual_004",
+      "category": "factual",
+      "requires_graph": false,
+      "question": "What is the Wall and who built it?",
+      "answer": "Citadel records indicate an error occurred while processing the response.",
+      "ground_truth": "The Wall is a massive fortification of ice and ancient magic stretching across the northern border of the Seven Kingdoms. It is said to have been built by Brandon the Builder, also known as Bran the Builder, with the help of giants, to protect the realm from the White Walkers and other threats beyond.",
+      "context_count": 4,
+      "contexts_preview": [
+        "[A Storm of Swords / BRAN]\nthough. It was my fault. I got us lost too. I couldn't even find the Wall. It's a hundred leagues long and seven hundred feet high and I couldn't find it! \" \"Well, you've fo",
+        "[A Dance With Dragons / DAENERYS]\nthe ants had managed to climb over it and find her. To them these tumbledown stones must loom as huge as the Wall of Westeros. The biggest wall in all the world , her",
+        "[A Storm of Swords / BRAN]\n\"What could you hope to see?\" Jojen asked.\n\n\" Something ,\" said Meera, and for once she was adamant.\n\nIt should be me . Bran raised his head to look up at the Wall, and imag",
+        "[A Dance With Dragons / THEMERCHANT’SMAN]\nI never asked for this, he thought.\n\nAcross the wide blue expanse of the Rhoyne, he could see the Black Wall that had been raised by the Valyrians when Volant"
+      ]
+    },
+    {
+      "id": "factual_005",
+      "category": "factual",
+      "requires_graph": false,
+      "question": "What is the Red Wedding?",
+      "answer": "Citadel records indicate an error occurred while processing the response.",
+      "ground_truth": "The Red Wedding refers to the massacre at the Twins during the War of the Five Kings, where Robb Stark, his mother Catelyn Tully, and most of his army were betrayed and slaughtered by Walder Frey and Roose Bolton, who had allied with House Lannister.",
+      "context_count": 4,
+      "contexts_preview": [
+        "[Fire and Blood -- George R_R_ Martin -- 2020 -- HarperCollins Publishers -- 52ef8cfbc6f3a17c8b02599ea828198e -- Anna’s Archive / A CONVERSATION BETWEEN GEORGE R. R. MARTIN AND DAN JONES]\nDJ: You draw",
+        "[Fire and Blood -- George R_R_ Martin -- 2020 -- HarperCollins Publishers -- 52ef8cfbc6f3a17c8b02599ea828198e -- Anna’s Archive / THE YEAR OF THE THREE BRIDES]\nT he 49th year after Aegon's Conquest ga",
+        "[Fire and Blood -- George R_R_ Martin -- 2020 -- HarperCollins Publishers -- 52ef8cfbc6f3a17c8b02599ea828198e -- Anna’s Archive / THE LONG REIGN]\nIn breeding, as in so much else, Baelon the Brave was ",
+        "[Fire and Blood -- George R_R_ Martin -- 2020 -- HarperCollins Publishers -- 52ef8cfbc6f3a17c8b02599ea828198e -- Anna’s Archive / THE YEAR OF THE THREE BRIDES]\nNo wedding half so magnificent had been "
+      ]
+    }
+  ]
+}
