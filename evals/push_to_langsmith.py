@@ -396,12 +396,32 @@ def run_experiment(
         print(f"  Categories      : {', '.join(categories)}")
     print()
 
+    # Fetch examples and filter client-side
+    print("  Fetching examples from LangSmith...")
+    examples = list(client.list_examples(dataset_id=dataset_id))
+    print(f"  Retrieved {len(examples)} examples.")
+
+    if categories:
+        examples = [
+            ex for ex in examples
+            if ex.outputs and ex.outputs.get("category") in categories
+        ]
+        print(f"  Filtered to {len(examples)} examples matching categories: {', '.join(categories)}")
+
+    if sample:
+        # Sort by created_at to ensure deterministic ordering of the sample
+        examples = sorted(examples, key=lambda x: getattr(x, "created_at", ""))[:sample]
+        print(f"  Sampled down to {len(examples)} examples.")
+
+    if not examples:
+        print("  ⚠️ No examples match the filters. Aborting experiment.")
+        return
+
     target_fn = build_target_fn()
     evaluators = build_evaluators()
 
-    # Build filter metadata for LangSmith (filter happens client-side via num_repetitions and example selection)
     kwargs: dict[str, Any] = {
-        "data": dataset_id,
+        "data": examples,
         "evaluators": evaluators,
         "experiment_prefix": experiment_name,
         "client": client,
@@ -413,11 +433,9 @@ def run_experiment(
             "categories_filter": categories or "all",
         },
     }
-    if sample:
-        kwargs["num_repetitions"] = 1
 
     print("  Starting experiment (each example runs the full Self-RAG graph)...")
-    print("  This will take several minutes depending on Groq API rate limits.\n")
+    print("  This will take several minutes depending on LLM provider rate limits.\n")
 
     results = ls_evaluate(target_fn, **kwargs)
 

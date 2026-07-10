@@ -162,13 +162,12 @@ def _build_openrouter(temperature: float) -> BaseChatModel | None:
     try:
         from langchain_openai import ChatOpenAI  # type: ignore
         logger.debug(
-            "[LLM Fallback] OpenRouter provider ready "
-            "(meta-llama/llama-3.1-8b-instruct:free)."
+            "[LLM Fallback] OpenRouter provider ready (openrouter/free)."
         )
         return ChatOpenAI(
             api_key=api_key,
             base_url="https://openrouter.ai/api/v1",
-            model="meta-llama/llama-3.1-8b-instruct:free",
+            model="openrouter/free",
             temperature=temperature,
             default_headers={
                 # OpenRouter recommends these for app identification and rate-limit grouping
@@ -240,8 +239,9 @@ def build_llm_with_fallback(temperature: float = 0.0) -> BaseChatModel:
         "Rate-limit errors will automatically retry on the next provider."
     )
 
-    exceptions = _rate_limit_exceptions()
+    # Handle any Exception (rate limits, 404s, region blocking, auth failures, etc.)
+    # so that we always try the next provider in the chain.
     return primary.with_fallbacks(
         fallbacks=fallbacks,
-        exceptions_to_handle=exceptions,
+        exceptions_to_handle=(Exception,),
     )
