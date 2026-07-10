@@ -213,7 +213,7 @@ def build_target_fn():
         """
         if _example_count[0] > 0:
             print(f"  [cooldown] Waiting 30s before example {_example_count[0] + 1} "
-                  "to respect Groq TPM limits...")
+                  "to respect LLM provider rate limits...")
             _time.sleep(30)
         _example_count[0] += 1
         return asyncio.run(_async_target(inputs))
@@ -230,17 +230,17 @@ def build_evaluators():
     Build LangSmith-compatible evaluator functions.
     Each evaluator receives (run, example) and returns a dict:
       { "key": str, "score": float (0-1), "comment": str }
+
+    Uses build_llm_with_fallback() so that the eval judge automatically falls
+    back to Gemini or OpenRouter if Groq hits a rate limit during scoring.
     """
-    from langchain_groq import ChatGroq  # noqa: PLC0415
+    import sys as _sys  # noqa: PLC0415
+    _sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "backend"))
+    from app.core.llm_fallback import build_llm_with_fallback  # noqa: PLC0415
     from langchain_core.prompts import ChatPromptTemplate  # noqa: PLC0415
     from langchain_core.output_parsers import StrOutputParser  # noqa: PLC0415
 
-    groq_api_key = os.environ.get("GROQ_API_KEY", "")
-    llm = ChatGroq(
-        api_key=groq_api_key,
-        model="llama-3.3-70b-versatile",
-        temperature=0.0,
-    )
+    llm = build_llm_with_fallback(temperature=0.0)
 
     # ── 1. Correctness evaluator ──────────────────────────────────────────
     correctness_prompt = ChatPromptTemplate.from_messages([

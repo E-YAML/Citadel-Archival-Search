@@ -3,7 +3,12 @@ langchain>=0.2.0
 langchain-core>=0.2.0
 langchain-community>=0.2.0
 langgraph>=0.1.0
-langchain-groq>=0.1.0
+langchain-groq>=1.0.0,<2.0.0
+# Fallback LLM providers:
+#   Gemini: langchain-google-genai (ChatGoogleGenerativeAI)
+#   OpenRouter: langchain-openai with custom base_url (no extra package)
+langchain-google-genai>=2.0.0
+langchain-openai>=1.0.0,<2.0.0
 langgraph-checkpoint-sqlite>=3.0.0
 
 # Vector DB

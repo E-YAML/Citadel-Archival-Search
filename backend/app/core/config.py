@@ -21,6 +21,12 @@ class Settings(BaseSettings):
     # API Keys & Third-party integrations
     GROQ_API_KEY: str
 
+    # Fallback LLM providers (optional — enables automatic rate-limit failover)
+    # Truly free, no CC needed — get key at https://aistudio.google.com/app/apikey
+    GOOGLE_API_KEY: Optional[str] = None
+    # Free-tier models via OpenAI-compatible API — https://openrouter.ai
+    OPENROUTER_API_KEY: Optional[str] = None
+
     # Qdrant Config
     QDRANT_URL: str
     QDRANT_API_KEY: str
