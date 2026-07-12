@@ -337,6 +337,15 @@ with st.sidebar:
         )
     st.markdown('</div>', unsafe_allow_html=True)
 
+    st.markdown('<div class="sidebar-card">', unsafe_allow_html=True)
+    st.markdown("**🔗 Conversational Memory**")
+    st.markdown(
+        "Ask follow-up questions naturally. The Maesters remember "
+        "what was discussed and resolve references like *he*, *that battle*, "
+        "or *the same house* from prior conversation."
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
+
     if st.button("🗑️ Clear Session", use_container_width=True, key="clear_btn"):
         st.session_state.messages = []
         st.session_state.thread_id = str(uuid.uuid4())
@@ -352,7 +361,7 @@ with st.sidebar:
 # Async Graph Streaming Bridge
 # ══════════════════════════════════════════════════════════════════════════════
 
-def stream_graph_events(question: str, thread_id: str):
+def stream_graph_events(question: str, thread_id: str, chat_history: list):
     """
     Generator that streams (event_type, data) tuples from the LangGraph graph.
 
@@ -382,6 +391,7 @@ def stream_graph_events(question: str, thread_id: str):
             "generation": "",
             "documents": [],
             "is_hallucination": False,
+            "chat_history": chat_history,
         }
         try:
             async for event in graph_app.astream_events(
@@ -482,7 +492,11 @@ if user_prompt := st.chat_input(
         generation_started = False
         error_occurred = False
 
-        for event_type, data in stream_graph_events(user_prompt, st.session_state.thread_id):
+        for event_type, data in stream_graph_events(
+            user_prompt,
+            st.session_state.thread_id,
+            st.session_state.messages[-12:],  # last 6 turns
+        ):
 
             if event_type == "node_start":
                 if data == "retrieve":

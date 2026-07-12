@@ -1,4 +1,4 @@
-from typing import TypedDict, List, Any
+from typing import TypedDict, List, Any, Dict
 
 
 class AgentState(TypedDict):
@@ -41,4 +41,10 @@ class AgentState(TypedDict):
     original_question: str
     """
     The original, unmodified question query supplied by the user (preserving any typos).
+    """
+
+    chat_history: List[Dict[str, str]]
+    """
+    Recent conversation history (list of {"role": "user"/"assistant", "content": "..."} dicts)
+    passed in from the frontend to enable follow-up question resolution.
     """

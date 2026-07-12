@@ -7,6 +7,7 @@ from app.core.config import settings
 
 from app.graph.state import AgentState
 from app.graph.nodes import (
+    contextualize_node,
     retrieve_node,
     grade_documents_node,
     generate_node,
@@ -108,13 +109,15 @@ async def check_hallucinations(state: AgentState) -> str:
 workflow = StateGraph(AgentState)
 
 # Register Nodes
+workflow.add_node("contextualize", contextualize_node)
 workflow.add_node("retrieve", retrieve_node)
 workflow.add_node("grade_documents", grade_documents_node)
 workflow.add_node("generate", generate_node)
 workflow.add_node("rewrite", rewrite_node)
 
 # Set up Standard Transitions
-workflow.add_edge(START, "retrieve")
+workflow.add_edge(START, "contextualize")
+workflow.add_edge("contextualize", "retrieve")
 workflow.add_edge("retrieve", "grade_documents")
 
 # Set up Conditional Routing from Grade Documents Node

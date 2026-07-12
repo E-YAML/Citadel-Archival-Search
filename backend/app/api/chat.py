@@ -18,10 +18,11 @@ graph_app = default_graph_app
 class ChatRequest(BaseModel):
     """
     Validation schema for incoming chat requests.
-    Tracks user prompt and persistent thread identifier.
+    Tracks user prompt, persistent thread identifier, and conversation history.
     """
     message: str
     thread_id: str
+    chat_history: list = []
 
 
 @router.post("/stream")
@@ -47,7 +48,7 @@ async def stream_chat(payload: ChatRequest, request: Request) -> StreamingRespon
             if is_testing:
                 # Stream events from the mocked LangGraph workflow under test
                 async for event in graph_app.astream_events(
-                    {"question": payload.message, "original_question": payload.message, "search_retry_count": 0},
+                    {"question": payload.message, "original_question": payload.message, "search_retry_count": 0, "chat_history": payload.chat_history},
                     config=config,
                     version="v2"
                 ):
@@ -74,7 +75,7 @@ async def stream_chat(payload: ChatRequest, request: Request) -> StreamingRespon
                 async with AsyncSqliteSaver.from_conn_string(settings.CHECKPOINT_DB_PATH) as memory:
                     compiled_graph = workflow.compile(checkpointer=memory)
                     async for event in compiled_graph.astream_events(
-                        {"question": payload.message, "original_question": payload.message, "search_retry_count": 0},
+                        {"question": payload.message, "original_question": payload.message, "search_retry_count": 0, "chat_history": payload.chat_history},
                         config=config,
                         version="v2"
                     ):

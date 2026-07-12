@@ -9,6 +9,30 @@ from app.graph.chains import (
     generator_chain,
     question_rewriter_chain,
 )
+from app.graph.contextualize import contextualize_question
+
+
+async def contextualize_node(state: AgentState) -> Dict[str, Any]:
+    """
+    Pre-processes the user question using chat history to resolve
+    follow-up references (pronouns, anaphora) into a self-contained question.
+
+    This node runs before retrieval so the search query is always standalone.
+    When chat_history is empty (first question), the LLM call is skipped entirely.
+
+    Args:
+        state: The current LangGraph AgentState.
+
+    Returns:
+        A dictionary updating the question and original_question fields.
+    """
+    logger.info("LangGraph Node: [contextualize_node] - Initiated.")
+    chat_history = state.get("chat_history", [])
+    question = state.get("question", "")
+
+    contextualized = await contextualize_question(chat_history, question)
+    logger.info(f"LangGraph Node: [contextualize_node] - Result: '{contextualized}'")
+    return {"question": contextualized, "original_question": contextualized}
 
 
 async def retrieve_node(state: AgentState) -> Dict[str, Any]:

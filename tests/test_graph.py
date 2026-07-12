@@ -3,7 +3,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from langchain_core.documents import Document
 from app.graph.state import AgentState
 from app.services.retrieval import retrieve_graph_context
-from app.graph.nodes import retrieve_node, grade_documents_node, generate_node, rewrite_node
+from app.graph.nodes import retrieve_node, grade_documents_node, generate_node, rewrite_node, contextualize_node
+from app.graph.contextualize import contextualize_question
 from app.graph.workflow import decide_to_generate, check_hallucinations
 
 @pytest.mark.asyncio
@@ -147,3 +148,44 @@ async def test_check_hallucinations(monkeypatch):
     mock_hallucination.ainvoke.return_value = "yes"
     mock_answer.ainvoke.return_value = "yes"
     assert await check_hallucinations(state) == "__end__"
+
+@pytest.mark.asyncio
+async def test_contextualize_question_empty_history():
+    """Test contextualize_question when there is no chat history (should bypass LLM)."""
+    question = "Who is Jon Snow?"
+    result = await contextualize_question([], question)
+    assert result == question
+
+@pytest.mark.asyncio
+async def test_contextualize_question_with_history(monkeypatch):
+    """Test contextualize_question when there is chat history (should call LLM)."""
+    mock_chain = AsyncMock()
+    mock_chain.ainvoke.return_value = "Who is Jon Snow's mother?"
+    monkeypatch.setattr("app.graph.contextualize.contextualize_question_chain", mock_chain)
+
+    history = [
+        {"role": "user", "content": "Who is Jon Snow?"},
+        {"role": "assistant", "content": "Jon Snow is a character in Westeros."}
+    ]
+    question = "Who is his mother?"
+    
+    result = await contextualize_question(history, question)
+    assert result == "Who is Jon Snow's mother?"
+    mock_chain.ainvoke.assert_called_once()
+
+@pytest.mark.asyncio
+async def test_contextualize_node_empty_history(monkeypatch):
+    """Test contextualize_node with empty chat history."""
+    state: AgentState = {
+        "question": "Who is Jon Snow?",
+        "original_question": "Who is Jon Snow?",
+        "generation": "",
+        "documents": [],
+        "is_hallucination": False,
+        "search_retry_count": 0,
+        "chat_history": []
+    }
+    result = await contextualize_node(state)
+    assert result["question"] == "Who is Jon Snow?"
+    assert result["original_question"] == "Who is Jon Snow?"
+

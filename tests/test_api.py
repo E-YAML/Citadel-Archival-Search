@@ -69,3 +69,35 @@ async def test_stream_chat_endpoint(monkeypatch):
         event_4 = json.loads(data_lines[3])
         assert event_4["event"] == "node_end"
         assert event_4["data"] == "retrieve"
+
+def test_stream_chat_endpoint_with_history(monkeypatch):
+    """Test `/api/chat/stream` post and check that SSE endpoint accepts chat_history."""
+    mock_events = MagicMock()
+    called_args = []
+
+    async def mock_astream_events(state, *args, **kwargs):
+        called_args.append(state)
+        if False:
+            yield {}
+
+    mock_events.astream_events = mock_astream_events
+    monkeypatch.setattr("app.api.chat.graph_app", mock_events)
+
+    with TestClient(app) as client:
+        payload = {
+            "message": "Who is his mother?",
+            "thread_id": "test-session-thread",
+            "chat_history": [
+                {"role": "user", "content": "Who is Jon Snow?"},
+                {"role": "assistant", "content": "Jon Snow is a character in Westeros."}
+            ]
+        }
+        response = client.post("/api/chat/stream", json=payload)
+        
+        assert response.status_code == 200
+        assert "text/event-stream" in response.headers["content-type"]
+        # Verify that mock_astream_events was called with the chat_history in state
+        assert len(called_args) == 1
+        assert called_args[0]["chat_history"] == payload["chat_history"]
+
+

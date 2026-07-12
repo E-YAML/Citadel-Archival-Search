@@ -88,6 +88,15 @@ with st.sidebar:
     st.caption("Enables stateful, thread-isolated conversational memory inside the graph checkpointer.")
     st.markdown("</div>", unsafe_allow_html=True)
 
+    st.markdown('<div class="sidebar-card">', unsafe_allow_html=True)
+    st.markdown("**🔗 Conversational Memory**")
+    st.markdown(
+        "Ask follow-up questions naturally. The Maesters remember "
+        "what was discussed and resolve references like *he*, *that battle*, "
+        "or *the same house* from prior conversation."
+    )
+    st.markdown("</div>", unsafe_allow_html=True)
+
     if st.button("Clear Archival Session", use_container_width=True):
         st.session_state.messages = []
         st.session_state.thread_id = str(uuid.uuid4())
@@ -117,7 +126,8 @@ if user_prompt := st.chat_input("Ask a question about Westeros lore..."):
         api_url = f"{backend_url.rstrip('/')}/api/chat/stream"
         payload = {
             "message": user_prompt,
-            "thread_id": st.session_state.thread_id
+            "thread_id": st.session_state.thread_id,
+            "chat_history": st.session_state.messages[-12:],  # last 6 turns
         }
 
         try:
