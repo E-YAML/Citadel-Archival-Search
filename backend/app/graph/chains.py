@@ -49,7 +49,7 @@ llm_generate = build_llm_with_fallback(temperature=0.0)
 # 1. Document Relevance Grader Chain (Text-based, robust)
 retrieval_grader_prompt = ChatPromptTemplate.from_messages([
     ("system", "You are an objective grader assessing relevance of a retrieved document to a user question.\n"
-               "Analyze the document text. If the document contains any information, facts, or context that is relevant to the question or any entities mentioned in the question (even if it only mentions one of the entities, such as only Viserys or only Daemon), output ONLY 'yes'. Otherwise, output 'no'.\n"
+               "Analyze the document text. If the document contains any information, facts, or context that directly addresses or is semantically relevant to the question (even if it only partially answers the question or mentions key entities of the query in a relevant context), output ONLY 'yes'. Otherwise, output 'no'.\n"
                "Do not output any other text or explanation. Only output 'yes' or 'no'."),
     ("human", "Retrieved Document:\n\n{document}\n\nUser Question: {question}")
 ])

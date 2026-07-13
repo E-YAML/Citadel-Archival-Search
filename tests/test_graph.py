@@ -113,9 +113,9 @@ async def test_rewrite_node(monkeypatch):
 
 def test_decide_to_generate():
     """Test graph routing from decide_to_generate."""
-    # Case 1: Max retries exceeded -> route to END
+    # Case 1: Max retries exceeded -> route to generate
     state = {"search_retry_count": 3, "documents": []}
-    assert decide_to_generate(state) == "__end__"
+    assert decide_to_generate(state) == "generate"
 
     # Case 2: No documents found -> route to rewrite
     state = {"search_retry_count": 0, "documents": []}

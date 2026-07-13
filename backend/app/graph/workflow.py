@@ -29,8 +29,8 @@ def decide_to_generate(state: AgentState) -> str:
     """
     retry_count = state.get("search_retry_count", 0)
     if retry_count >= 3:
-        logger.warning(f"Routing to END: Max retry threshold reached ({retry_count}).")
-        return END
+        logger.warning(f"Routing to generate: Max search retry threshold reached ({retry_count}).")
+        return "generate"
 
     documents = state.get("documents", [])
     if not documents:
