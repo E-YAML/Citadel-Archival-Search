@@ -103,6 +103,7 @@ def _build_groq(temperature: float) -> BaseChatModel | None:
             api_key=api_key,
             model="llama-3.3-70b-versatile",
             temperature=temperature,
+            max_retries=0,
         )
     except ImportError:
         logger.warning("[LLM Fallback] langchain-groq not installed — Groq provider disabled.")
@@ -133,6 +134,7 @@ def _build_gemini(temperature: float) -> BaseChatModel | None:
             google_api_key=api_key,
             model="gemini-1.5-flash",
             temperature=temperature,
+            max_retries=0,
         )
     except ImportError:
         logger.warning(
@@ -162,13 +164,14 @@ def _build_openrouter(temperature: float) -> BaseChatModel | None:
     try:
         from langchain_openai import ChatOpenAI  # type: ignore
         logger.debug(
-            "[LLM Fallback] OpenRouter provider ready (openrouter/free)."
+            "[LLM Fallback] OpenRouter provider ready (tencent/hy3:free)."
         )
         return ChatOpenAI(
             api_key=api_key,
             base_url="https://openrouter.ai/api/v1",
-            model="openrouter/free",
+            model="tencent/hy3:free",
             temperature=temperature,
+            max_retries=0,
             default_headers={
                 # OpenRouter recommends these for app identification and rate-limit grouping
                 "HTTP-Referer": "https://github.com/citadel-archival-search",
@@ -210,7 +213,7 @@ def build_llm_with_fallback(temperature: float = 0.0) -> BaseChatModel:
     Raises:
         RuntimeError: If no provider is available (all API keys missing / unset).
     """
-    builders = [_build_groq, _build_gemini, _build_openrouter]
+    builders = [_build_openrouter, _build_groq, _build_gemini]
     available: list[BaseChatModel] = [
         llm for builder in builders if (llm := builder(temperature)) is not None
     ]

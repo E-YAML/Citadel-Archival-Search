@@ -16,18 +16,14 @@ llm_contextualize = build_llm_with_fallback(temperature=0.0)
 
 _contextualize_prompt = ChatPromptTemplate.from_messages([
     ("system",
-     "Given the conversation history and the latest user question, your ONLY "
-     "job is to reformulate the latest question so it can be understood "
-     "WITHOUT the conversation history.\n"
-     "Rules:\n"
-     "1. Replace ALL pronouns and references (he, she, they, it, his, her, "
-     "that, the same, etc.) with the specific entities they refer to from "
-     "the conversation history.\n"
-     "2. If the question is ALREADY fully self-contained and understandable "
-     "on its own, return it EXACTLY as-is.\n"
-     "3. Do NOT answer the question.\n"
-     "4. Do NOT add information that was not in the original question.\n"
-     "5. Return ONLY the reformulated question text, nothing else."),
+     "You are an expert Westeros lore scholar and archivist.\n"
+     "Given the conversation history and the latest user question, your job is to reformulate the latest question into a self-contained, grammatically correct search query.\n"
+     "Follow these rules:\n"
+     "1. Replace ALL pronouns and references (e.g., 'he', 'she', 'they', 'it', 'his', 'her', 'that battle', 'the same house') with the specific entities they refer to from the conversation history.\n"
+     "2. Correct ALL spelling mistakes, typos, and misremembered/phonetic names of characters, houses, locations, and terms from A Song of Ice and Fire / Game of Thrones (e.g., 'daemon targeryan' -> 'Daemon Targaryen', 'rheagar' -> 'Rhaegar', 'targeryan' -> 'Targaryen', 'aegon 3' -> 'Aegon III').\n"
+     "3. Keep the query focused, clean, and optimized for vector/keyword search. Do NOT answer the question.\n"
+     "4. Do NOT add external assumptions or facts not present in the conversation history or question.\n"
+     "5. Return ONLY the reformulated question text, with no introduction, explanation, or quotes."),
     ("human",
      "Conversation History:\n{chat_history}\n\n"
      "Latest Question: {question}\n\n"
@@ -65,8 +61,9 @@ async def contextualize_question(
     """
     Resolve follow-up references in *question* using *chat_history*.
 
-    If history is empty (first question in the session), the question is
-    returned unchanged **without** making an LLM call.
+    Normalizes spelling and resolves references using conversation history.
+    If history is empty (first question in the session), a placeholder history
+    is passed to perform spelling/name correction.
 
     Args:
         chat_history: List of ``{"role": ..., "content": ...}`` dicts from the
@@ -77,10 +74,10 @@ async def contextualize_question(
         A self-contained question string.
     """
     if not chat_history:
-        logger.debug("Contextualize: No chat history — returning question as-is.")
-        return question
+        history_text = "No prior history."
+    else:
+        history_text = _format_chat_history(chat_history)
 
-    history_text = _format_chat_history(chat_history)
     try:
         result = await contextualize_question_chain.ainvoke({
             "chat_history": history_text,

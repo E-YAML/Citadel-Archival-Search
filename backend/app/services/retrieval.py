@@ -1,3 +1,5 @@
+import asyncio
+import re
 from typing import List, Dict, Any, Optional
 from fastembed import TextEmbedding, SparseTextEmbedding
 from qdrant_client.http import models
@@ -33,12 +35,104 @@ def get_sparse_model() -> SparseTextEmbedding:
     return _sparse_model
 
 
-async def retrieve_vector_context(query: str, limit: int = 4) -> List[Dict[str, Any]]:
+async def retrieve_vector_context(query: str, limit: int = 4, decompose: bool = True) -> List[Dict[str, Any]]:
     """
     Queries the Qdrant 'asoiaf_lore' collection.
     Utilizes Reciprocal Rank Fusion (RRF) Hybrid Search to combine semantic search
     and sparse keyword matching.
     """
+    if decompose and " and " in query:
+        sub_queries = [query]
+        parts = query.split(" and ", 1)
+        part1, part2 = parts[0].strip(), parts[1].strip()
+        
+        # 1. Capitalization-based entity extraction
+        words1 = part1.split()
+        entity1_words = []
+        for w in reversed(words1):
+            clean_w = re.sub(r'[^\w\s]', '', w)
+            if clean_w and clean_w[0].isupper() and clean_w.lower() not in {"who", "what", "where", "when", "why", "how", "which"}:
+                entity1_words.insert(0, w)
+            else:
+                break
+        
+        words2 = part2.split()
+        entity2_words = []
+        for w in words2:
+            clean_w = re.sub(r'[^\w\s]', '', w)
+            if clean_w and clean_w[0].isupper():
+                entity2_words.append(w)
+            else:
+                break
+                
+        # 2. Relaxed stop-word based extraction fallback (ignoring capitalization)
+        if not (entity1_words and entity2_words):
+            stop_words = {"who", "what", "where", "when", "why", "how", "which", "is", "the", "mother", "father", "of", "to", "kin", "was", "were", "and", "or", "a", "an", "in", "on", "at", "by", "with", "from", "son", "daughter", "brother", "sister", "wife", "husband"}
+            
+            entity1_words = []
+            for w in reversed(words1):
+                clean_w = re.sub(r'[^\w\s]', '', w).lower()
+                if clean_w and clean_w not in stop_words:
+                    entity1_words.insert(0, w)
+                else:
+                    break
+                    
+            entity2_words = []
+            for w in words2:
+                clean_w = re.sub(r'[^\w\s]', '', w).lower()
+                if clean_w and clean_w not in stop_words:
+                    entity2_words.append(w)
+                else:
+                    break
+                    
+        if entity1_words and entity2_words:
+            entity1 = " ".join(entity1_words)
+            entity2 = " ".join(entity2_words)
+            
+            prefix = part1[:-len(entity1)].rstrip()
+            suffix = part2[len(entity2):].lstrip()
+            
+            sub_query1 = f"{prefix} {entity1} {suffix}".strip()
+            sub_query2 = f"{prefix} {entity2} {suffix}".strip()
+            
+            if sub_query1 not in sub_queries:
+                sub_queries.append(sub_query1)
+            if sub_query2 not in sub_queries:
+                sub_queries.append(sub_query2)
+                
+        # 3. Clausal split fallback: if both sides are full phrases (>= 3 words), run them directly as subqueries
+        if len(words1) >= 3 and len(words2) >= 3:
+            if part1 not in sub_queries:
+                sub_queries.append(part1)
+            if part2 not in sub_queries:
+                sub_queries.append(part2)
+                
+        logger.info(f"Decomposed query '{query}' into: {sub_queries}")
+        
+        # Run sub-queries in parallel
+        # We increase the limit of the sub-queries to look deeper (since names match widely)
+        sub_limit = max(30, limit * 3)
+        tasks = [retrieve_vector_context(sq, limit=sub_limit, decompose=False) for sq in sub_queries]
+        results_lists = await asyncio.gather(*tasks)
+        
+        # Merge results, keeping uniqueness based on page_content
+        merged_results = []
+        seen_texts = set()
+        
+        max_len = max(len(lst) for lst in results_lists)
+        for i in range(max_len):
+            for lst in results_lists:
+                if i < len(lst):
+                    res = lst[i]
+                    text = res["text"]
+                    if text not in seen_texts:
+                        seen_texts.add(text)
+                        merged_results.append(res)
+                        
+        # Return up to 50 results to allow downstream grading nodes to filter them,
+        # ensuring we capture less prominent/deep matches (like birth chunks).
+        return merged_results[:50]
+
     logger.info(f"Initiating hybrid retrieval for query: '{query}'")
     try:
         client = qdrant_service.get_client()

@@ -50,7 +50,7 @@ async def retrieve_node(state: AgentState) -> Dict[str, Any]:
 
     try:
         # Fetch matching documents via hybrid search
-        search_results = await retrieve_vector_context(query=question, limit=4)
+        search_results = await retrieve_vector_context(query=question, limit=10)
         documents = [
             Document(page_content=res["text"], metadata=res["metadata"])
             for res in search_results
@@ -111,7 +111,13 @@ async def grade_documents_node(state: AgentState) -> Dict[str, Any]:
             logger.error(f"Error grading document {idx + 1}: {str(e)}")
             return idx, False
 
-    tasks = [grade_doc(i, d) for i, d in enumerate(documents)]
+    semaphore = asyncio.Semaphore(5)
+
+    async def grade_doc_sem(idx: int, doc: Document) -> tuple:
+        async with semaphore:
+            return await grade_doc(idx, doc)
+
+    tasks = [grade_doc_sem(i, d) for i, d in enumerate(documents)]
     results = await asyncio.gather(*tasks)
     
     # Maintain ordering

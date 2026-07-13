@@ -495,7 +495,7 @@ if user_prompt := st.chat_input(
         for event_type, data in stream_graph_events(
             user_prompt,
             st.session_state.thread_id,
-            st.session_state.messages[-12:],  # last 6 turns
+            st.session_state.messages[:-1][-12:],  # last 6 turns of PRIOR history
         ):
 
             if event_type == "node_start":
